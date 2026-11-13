@@ -5,7 +5,8 @@ const config: CapacitorConfig = {
   appName: '神也背单词',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'http',
+    cleartext: true
   }
 }
 

@@ -1,8 +1,9 @@
 import axios from 'axios'
+import { Capacitor } from '@capacitor/core'
 import { showToast } from 'vant'
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || '/api',
+  baseURL: import.meta.env.VITE_API_BASE || (Capacitor.isNativePlatform() ? 'http://47.95.66.191:8082/api' : '/api'),
   timeout: 15000
 })
 
