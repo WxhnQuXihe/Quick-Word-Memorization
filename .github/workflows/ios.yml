@@ -1,0 +1,50 @@
+name: build-ios
+
+on:
+  workflow_dispatch:
+
+jobs:
+  simulator:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Build web
+        working-directory: app
+        run: npm ci && npm run build
+
+      - name: Sync Capacitor
+        working-directory: app
+        run: npx cap sync ios
+
+      - name: Install pods
+        working-directory: app/ios/App
+        run: pod install
+
+      - name: Build simulator app
+        working-directory: app/ios/App
+        run: |
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package app
+        working-directory: app/ios/App
+        run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Debug-iphonesimulator/App.app shorthand-ios-sim.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shorthand-ios-sim
+          path: app/ios/App/shorthand-ios-sim.zip
+          if-no-files-found: error
