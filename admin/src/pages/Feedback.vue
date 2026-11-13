@@ -1,28 +1,69 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-const rows = [
-  { id: 1, user: 'QX', content: '希望能加一个「只看单词」的开关', time: '今天 12:06', status: 0 },
-  { id: 2, user: 'wang', content: '词组那本有的释义重复了', time: '昨天 18:20', status: 0 }
-]
-function reply() { ElMessage.info('回复抽屉下一步接入') }
+import { listFeedback, replyFeedback } from '../api/admin'
+
+const rows = ref<any[]>([])
+const loading = ref(false)
+const dialog = ref(false)
+const current = ref<any>(null)
+const reply = ref('')
+
+async function load() {
+  loading.value = true
+  try {
+    const res = await listFeedback()
+    rows.value = res.records || []
+  } finally {
+    loading.value = false
+  }
+}
+
+function open(row: any) {
+  current.value = row
+  reply.value = row.reply || ''
+  dialog.value = true
+}
+
+async function send() {
+  if (!reply.value.trim()) return ElMessage.warning('请输入回复')
+  await replyFeedback(current.value.id, reply.value.trim())
+  ElMessage.success('已回复')
+  dialog.value = false
+  await load()
+}
+
+onMounted(load)
 </script>
 
 <template>
   <div class="page">
-    <div class="panel">
-      <div class="head"><h2>用户反馈</h2><span>2 OPEN</span></div>
+    <div class="panel" v-loading="loading">
+      <div class="head"><h2>用户反馈</h2><span>{{ rows.filter(r => r.status === 0).length }} OPEN</span></div>
       <div v-for="r in rows" :key="r.id" class="row">
-        <div class="avatar">{{ r.user.slice(0, 1) }}</div>
-        <div class="body"><b>{{ r.user }}</b><p>{{ r.content }}</p><span>{{ r.time }}</span></div>
-        <el-button link @click="reply">回复</el-button>
+        <div class="avatar">{{ (r.userId || '?').toString().slice(0, 1) }}</div>
+        <div class="body">
+          <b>用户 #{{ r.userId || '-' }}</b>
+          <p>{{ r.content }}</p>
+          <span>{{ (r.createTime || '').replace('T', ' ').slice(0, 16) }} · {{ r.status === 1 ? '已回复' : '待处理' }}</span>
+          <div v-if="r.reply" class="reply">回复：{{ r.reply }}</div>
+        </div>
+        <el-button link @click="open(r)">{{ r.status === 1 ? '查看' : '回复' }}</el-button>
       </div>
+      <div v-if="!rows.length" class="empty">还没有反馈</div>
     </div>
+
+    <el-dialog v-model="dialog" title="回复反馈" width="460px">
+      <p class="content">{{ current?.content }}</p>
+      <el-input v-model="reply" type="textarea" :rows="4" placeholder="写点回复…" />
+      <template #footer><el-button @click="dialog = false">取消</el-button><el-button type="primary" @click="send">发送</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
 <style scoped>
 .page { display: flex; flex-direction: column; gap: 14px; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; min-height: 120px; }
 .head { display: flex; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .head h2 { font-size: 12px; margin: 0; font-weight: 600; }
 .head span { margin-left: auto; font-family: var(--mono); font-size: 9px; color: var(--muted); }
@@ -33,4 +74,7 @@ function reply() { ElMessage.info('回复抽屉下一步接入') }
 .body b { font-size: 11px; font-weight: 500; }
 .body p { margin: 5px 0; font-size: 12px; color: #b9c2cc; }
 .body span { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+.reply { margin-top: 7px; font-size: 11px; color: var(--accent); }
+.content { font-size: 12px; color: var(--muted); line-height: 1.7; margin: 0 0 12px; }
+.empty { text-align: center; color: var(--muted); padding: 34px; }
 </style>

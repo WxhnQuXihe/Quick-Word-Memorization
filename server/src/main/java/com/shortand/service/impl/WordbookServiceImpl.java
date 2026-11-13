@@ -143,6 +143,8 @@ public class WordbookServiceImpl implements IWordbookService {
         vo.setDifficulty(book.getDifficulty());
         vo.setWordCount(book.getWordCount());
         vo.setStatus(book.getStatus());
+        vo.setSort(book.getSort());
+        vo.setUpdateTime(book.getUpdateTime());
         if (row != null) {
             vo.setCurrentRoundNo(row.getCurrentRoundNo());
             vo.setLastStudyTime(row.getLastStudyTime());

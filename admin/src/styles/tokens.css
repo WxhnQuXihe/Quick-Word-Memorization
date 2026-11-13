@@ -61,3 +61,24 @@ a { color: inherit; text-decoration: none; }
 .el-table th.el-table__cell, .el-table td.el-table__cell { border-bottom: 1px solid #14191e; }
 .el-table tr { background: transparent; }
 .el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell { background: #10151a; }
+
+.el-dialog, .el-drawer, .el-message-box {
+  background: var(--panel) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line);
+}
+.el-dialog__title, .el-drawer__title, .el-message-box__title { color: var(--ink) !important; }
+.el-dialog__body, .el-drawer__body { color: var(--ink) !important; }
+.el-form-item__label { color: var(--muted) !important; }
+.el-select__wrapper {
+  background: #0d1013 !important;
+  box-shadow: 0 0 0 1px var(--line) inset !important;
+}
+.el-select__placeholder, .el-select__selected-item { color: var(--ink) !important; }
+.el-textarea__inner {
+  background: #0b0e11 !important;
+  color: var(--ink) !important;
+  box-shadow: 0 0 0 1px var(--line) inset !important;
+}
+.el-input-number { width: 100%; }
+.el-drawer__header { border-bottom: 1px solid var(--line); margin-bottom: 18px; }

@@ -14,6 +14,8 @@ public class WordbookVo {
     private Integer difficulty;
     private Integer wordCount;
     private Integer status;
+    private Integer sort;
+    private java.time.LocalDateTime updateTime;
     private Integer currentRoundNo;
     private Integer learnedCount;
     private LocalDateTime lastStudyTime;
