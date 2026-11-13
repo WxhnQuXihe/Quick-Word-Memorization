@@ -1,9 +1,8 @@
 <script setup lang="ts">
-const books = [
-  { code: 'CET4', name: '四级大纲', words: '4,427', progress: 72, status: '已上架', updated: '2h ago' },
-  { code: 'CET6', name: '六级大纲', words: '5,515', progress: 48, status: '已上架', updated: '1d ago' },
-  { code: 'PHRASE', name: '四六级词组', words: '2,329', progress: 31, status: '草稿', updated: '3d ago' }
-]
+import { onMounted, ref } from 'vue'
+import { getDashboard } from '../api/admin'
+
+const stats = ref<any>(null)
 const events = [
   ['14:32', 'IMPORT', '六级大纲 · 5,515 条词条已入库'],
   ['14:18', 'SYSTEM', 'TTS 未启用，跳过音频任务'],
@@ -12,36 +11,33 @@ const events = [
   ['09:41', 'AUTH', 'admin 登录 · 47.95.66.191']
 ]
 const bars = [18, 26, 22, 34, 30, 46, 38, 52, 44, 61, 55, 68, 62, 74]
-const users = [
-  ['QX', '四级大纲 · 第 3 组', '2h'],
-  ['W', '六级大纲 · 第 12 组', '5h'],
-  ['L', '四级大纲 · 第 8 组', '1d'],
-  ['M', '四六级词组 · 第 2 组', '2d']
-]
+const fmt = (n: number | undefined) => (n ?? 0).toLocaleString()
+onMounted(async () => { stats.value = await getDashboard() })
 </script>
 
 <template>
   <div class="dash">
     <section class="kpis">
-      <div class="kpi"><div class="label">词条总量</div><div class="value">12,271</div><div class="delta"><b>+1,842</b> / 本周</div><div class="spark a"></div></div>
-      <div class="kpi"><div class="label">注册用户</div><div class="value">8</div><div class="delta"><b>+2</b> / 本周</div><div class="spark b"></div></div>
-      <div class="kpi"><div class="label">收藏总数</div><div class="value">1,096</div><div class="delta"><b>+86</b> / 本周</div><div class="spark a"></div></div>
-      <div class="kpi"><div class="label">待处理反馈</div><div class="value">2</div><div class="delta"><b>需回复</b></div><div class="spark c"></div></div>
+      <div class="kpi"><div class="label">词条总量</div><div class="value">{{ fmt(stats?.wordCount) }}</div><div class="delta"><b>{{ stats?.bookCount || 0 }}</b> 本词书</div><div class="spark a"></div></div>
+      <div class="kpi"><div class="label">注册用户</div><div class="value">{{ fmt(stats?.userCount) }}</div><div class="delta"><b>不开放注册</b></div><div class="spark b"></div></div>
+      <div class="kpi"><div class="label">收藏总数</div><div class="value">{{ fmt(stats?.favoriteCount) }}</div><div class="delta"><b>{{ fmt(stats?.knownCount) }}</b> 个熟词</div><div class="spark a"></div></div>
+      <div class="kpi"><div class="label">待处理反馈</div><div class="value">{{ fmt(stats?.openFeedbackCount) }}</div><div class="delta"><b>需回复</b></div><div class="spark c"></div></div>
     </section>
 
     <section class="grid">
       <div class="panel books">
         <div class="panel-head"><h2>词书运行状态</h2><span>3 BOOKS / LIVE</span></div>
         <table>
-          <thead><tr><th>词书</th><th>词数</th><th>学习覆盖率</th><th>状态</th><th>最近更新</th></tr></thead>
+          <thead><tr><th>词书</th><th>词数</th><th>状态</th><th>排序</th><th>最近更新</th></tr></thead>
           <tbody>
-            <tr v-for="b in books" :key="b.code">
+            <tr v-for="b in (stats?.books || [])" :key="b.id">
               <td><div class="book"><b>{{ b.name }}</b><span>{{ b.code }}</span></div></td>
-              <td class="mono">{{ b.words }}</td>
-              <td><div class="bar"><i :style="{ width: b.progress + '%' }"></i></div><span class="mono">{{ b.progress }}%</span></td>
-              <td><span class="pill" :class="{ draft: b.status === '草稿' }">{{ b.status }}</span></td>
-              <td class="mono">{{ b.updated }}</td>
+              <td class="mono">{{ fmt(b.wordCount) }}</td>
+              <td><span class="pill" :class="{ draft: b.status !== 1 }">{{ b.status === 1 ? '已上架' : '草稿' }}</span></td>
+              <td class="mono">{{ b.sort }}</td>
+              <td class="mono">{{ (b.updateTime || '-').replace('T', ' ').slice(0, 16) }}</td>
             </tr>
+            <tr v-if="!stats?.books?.length"><td colspan="5" class="mono">还没有词书</td></tr>
           </tbody>
         </table>
       </div>
@@ -75,13 +71,14 @@ const users = [
         </div>
       </div>
       <div class="panel">
-        <div class="panel-head"><h2>最近用户</h2><span>8 TOTAL</span></div>
+        <div class="panel-head"><h2>最近用户</h2><span>{{ stats?.userCount || 0 }} TOTAL</span></div>
         <div class="users">
-          <div v-for="u in users" :key="u[0]" class="user">
-            <div class="ava">{{ u[0] }}</div>
-            <div class="info"><b>{{ u[0] === 'QX' ? 'QX' : u[0] }}</b><span>{{ u[1] }}</span></div>
-            <div class="mono time">{{ u[2] }}</div>
+          <div v-for="u in (stats?.recentUsers || [])" :key="u.id" class="user">
+            <div class="ava">{{ (u.nickname || u.username || '?').slice(0, 1) }}</div>
+            <div class="info"><b>{{ u.nickname || u.username }}</b><span>@{{ u.username }}</span></div>
+            <div class="mono time">{{ u.status === 1 ? '正常' : '禁用' }}</div>
           </div>
+          <div v-if="!stats?.recentUsers?.length" class="mono" style="padding:16px">还没有用户</div>
         </div>
       </div>
     </section>

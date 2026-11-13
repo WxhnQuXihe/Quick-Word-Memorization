@@ -79,3 +79,7 @@ export function listFeedback(pageNo = 1, pageSize = 20, status?: number): Promis
 export function replyFeedback(id: number, reply: string): Promise<void> {
   return http.post(`/admin/feedback/${id}/reply`, { reply })
 }
+
+export function getDashboard(): Promise<any> {
+  return http.get('/admin/dashboard')
+}
