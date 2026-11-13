@@ -51,8 +51,26 @@ jobs:
           name: shorthand-dist
           path: deploy
 
-  deploy:
+  preflight:
     needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          if [ -n "$HOST" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::DEPLOY_HOST is not configured; deploy job skipped"
+          fi
+
+  deploy:
+    needs: [build, preflight]
+    if: needs.preflight.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
