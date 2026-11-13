@@ -1,0 +1,63 @@
+:root {
+  --bg: #08090b;
+  --panel: #0d1013;
+  --panel-2: #101419;
+  --line: #1c2228;
+  --ink: #e7ecf2;
+  --muted: #78828e;
+  --accent: #c8f560;
+  --cyan: #63e6ff;
+  --warn: #d5a35a;
+  --radius: 14px;
+  --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  --el-color-primary: #c8f560;
+  --el-color-primary-light-3: #d9f88a;
+  --el-color-primary-light-5: #e5fbb2;
+  --el-color-primary-light-7: #f0fdd6;
+  --el-color-primary-light-9: #f8ffeb;
+  --el-color-primary-dark-2: #a8d13f;
+  --el-bg-color: #0d1013;
+  --el-bg-color-overlay: #101419;
+  --el-text-color-primary: #e7ecf2;
+  --el-text-color-regular: #b9c2cc;
+  --el-text-color-secondary: #78828e;
+  --el-border-color: #1c2228;
+  --el-border-color-light: #1c2228;
+  --el-fill-color-blank: #0d1013;
+}
+
+* { box-sizing: border-box; }
+html, body, #app { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; }
+a { color: inherit; text-decoration: none; }
+
+.el-input__wrapper {
+  background: #0d1013 !important;
+  box-shadow: 0 0 0 1px var(--line) inset !important;
+}
+.el-input__inner { color: var(--ink) !important; }
+.el-button--primary {
+  --el-button-bg-color: var(--accent);
+  --el-button-text-color: #060806;
+  --el-button-hover-bg-color: #d9f88a;
+  --el-button-hover-text-color: #060806;
+  --el-button-border-color: var(--accent);
+}
+.el-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: transparent;
+  --el-table-border-color: var(--line);
+  --el-table-text-color: var(--ink);
+  --el-table-header-text-color: var(--muted);
+}
+.el-table th.el-table__cell, .el-table td.el-table__cell { border-bottom: 1px solid #14191e; }
+.el-table tr { background: transparent; }
+.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell { background: #10151a; }
