@@ -22,6 +22,13 @@ OUT = ROOT / "wordbooks"
 OUT.mkdir(exist_ok=True)
 
 HEADERS = ["序号", "单词", "英式音标", "美式音标", "词性", "释义", "英文例句", "例句翻译"]
+PHONETIC_FIX = {
+    "absolute": "/ˈæbsəluːt/",
+    "atmospheric": "/ˌætməsˈfɪrɪk/",
+    "elaborate": "/ɪˈlæbərət; ɪˈlæbəreɪt/",
+    "suggestion": "/səˈdʒestʃən/",
+}
+
 POS_RE = re.compile(
     r"(?<![A-Za-z])(v|n|adj|adv|prep|conj|pron|num|art|int|vt|vi|aux|abbr)\.\s*",
     re.IGNORECASE,
@@ -83,6 +90,7 @@ def build_from_xlsx(source: Path, output: Path, phrase: bool = False):
         else:
             seq, word, phonetic_uk, meaning = (raw + (None, None, None, None))[:4]
             phonetic_us = ""
+            phonetic_uk = PHONETIC_FIX.get(word.lower(), phonetic_uk)
             examples = ("", "")
         word = str(word or "").strip()
         if not word:
