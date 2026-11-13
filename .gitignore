@@ -2,6 +2,7 @@
 server/target/
 *.class
 *.jar
+!app/android/gradle/wrapper/gradle-wrapper.jar
 *.war
 
 # Node
