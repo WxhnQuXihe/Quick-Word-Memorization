@@ -37,3 +37,5 @@ management:
 
 app:
   upload-dir: ${APP_UPLOAD_DIR:./data/uploads}
+  token-secret: ${APP_TOKEN_SECRET:shorthand-dev-secret-change-me}
+  token-days: ${APP_TOKEN_DAYS:90}
