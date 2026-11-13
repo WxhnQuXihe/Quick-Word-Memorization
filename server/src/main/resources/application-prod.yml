@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 6
+      minimum-idle: 2
+
+logging:
+  file:
+    name: ${LOG_FILE:/opt/shortand/logs/shortand.log}
+  level:
+    root: info
