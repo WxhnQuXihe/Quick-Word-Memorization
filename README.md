@@ -2,7 +2,7 @@
 
 神也背单词 · 背单词 App（个人/小范围使用，不商业化）。
 
-技术栈：Vue 3 + Vite + Capacitor（iOS/Android） / Spring Boot 3 + MyBatis-Plus + MySQL 8。
+技术栈：Vue 3 + Vite + Capacitor（Android） / Spring Boot 3 + MyBatis-Plus + MySQL 8。
 
 ## 当前阶段
 
@@ -49,7 +49,7 @@ cd app && npm install && npm run dev
 
 ## 发布
 
-打版本 tag 会自动构建 Android APK 和 iOS 模拟器包，并发布到 GitHub Release：
+打版本 tag 会自动构建 Android APK，并发布到 GitHub Release：
 
 ```bash
 git tag v0.2.1

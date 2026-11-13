@@ -39,41 +39,8 @@ jobs:
           path: app/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-  ios:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-      - working-directory: app
-        run: npm ci && npm run build
-      - working-directory: app
-        run: npx cap sync ios
-      - working-directory: app/ios/App
-        run: pod install
-      - working-directory: app/ios/App
-        run: |
-          xcodebuild \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Debug \
-            -sdk iphonesimulator \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            build
-      - working-directory: app/ios/App
-        run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Debug-iphonesimulator/App.app shorthand-ios-sim.zip
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ios-sim
-          path: app/ios/App/shorthand-ios-sim.zip
-          if-no-files-found: error
-
   publish:
-    needs: [android, ios]
+    needs: android
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -87,7 +54,5 @@ jobs:
             Shorthand 自动构建产物。
 
             - Android：debug APK，可直接安装测试
-            - iOS：模拟器 .app 压缩包，不是 App Store 签名包
           files: |
             artifacts/android-apk/app-debug.apk
-            artifacts/ios-sim/shorthand-ios-sim.zip
