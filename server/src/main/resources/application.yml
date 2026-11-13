@@ -5,7 +5,7 @@ spring:
   application:
     name: shortand-server
   datasource:
-    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/shortand?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/shortand?useUnicode=true&characterEncoding=UTF-8&characterSetResults=utf8mb4&connectionCollation=utf8mb4_unicode_ci&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:}
     hikari:
