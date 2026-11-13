@@ -33,7 +33,7 @@ function logout() {
       </div>
       <div class="row-actions">
         <van-button size="small" round plain @click="router.push('/favorites')">查看</van-button>
-        <van-button size="small" round type="primary" @click="showToast('背收藏夹下一步接入')">背收藏夹</van-button>
+        <van-button size="small" round type="primary" @click="router.push('/favorites/study')">背收藏夹</van-button>
       </div>
     </section>
 

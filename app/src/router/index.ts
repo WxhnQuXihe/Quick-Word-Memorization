@@ -8,6 +8,7 @@ const router = createRouter({
     { path: '/study/:bookId', name: 'study', component: () => import('../pages/Study.vue') },
     { path: '/me', name: 'me', component: () => import('../pages/Me.vue') },
     { path: '/favorites', name: 'favorites', component: () => import('../pages/Favorites.vue') },
+    { path: '/favorites/study', name: 'favorite-study', component: () => import('../pages/FavoriteStudy.vue') },
     { path: '/known', name: 'known', component: () => import('../pages/Known.vue') }
   ]
 })

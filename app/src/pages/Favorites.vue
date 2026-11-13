@@ -30,7 +30,7 @@ onMounted(load)
     <header class="topbar">
       <button class="back" @click="router.back()">‹</button>
       <div class="title"><b>收藏夹</b><span>你的私人词书</span></div>
-      <button class="study-link" @click="showToast('背收藏夹下一步接入')">背收藏夹</button>
+      <button class="study-link" @click="router.push('/favorites/study')">背收藏夹</button>
     </header>
     <div v-if="loading" class="card loading">正在翻收藏夹…</div>
     <div v-else-if="!rows.length" class="card empty-card"><div class="empty-mark">☆</div><h2 class="serif">还没有收藏</h2><p>在背单词时点一下星标，词就会汇到这里。</p><van-button type="primary" round @click="router.replace('/')">去背单词</van-button></div>
