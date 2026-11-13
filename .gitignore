@@ -51,3 +51,6 @@ _artifacts/
 
 # Local deploy bundle
 .deploy-tmp/
+
+# Local OCR working files
+_ocr_pages/
