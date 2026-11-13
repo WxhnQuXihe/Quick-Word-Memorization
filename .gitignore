@@ -32,3 +32,6 @@ logs/
 
 # Runtime uploads
 data/uploads/
+
+# Local design renders
+_ui_pages/
