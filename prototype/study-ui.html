@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>拾词 · 背单词 UI 原型</title>
+<title>神也背单词 · 背单词 UI 原型</title>
 <!--
   THROWAWAY UI PROTOTYPE — not production code.
   Three structurally different variants of the study screen, switchable with ?variant=A|B|C.
@@ -129,8 +129,10 @@
   .word-zone, .meaning-zone { cursor: pointer; }
   .word { margin: 2px 0 4px; }
   .phonetic { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
-  .meaning { font-size: 14px; line-height: 1.7; }
-  .pos { display: inline-block; font-size: 11px; color: var(--accent); font-weight: 600; margin-right: 6px; vertical-align: 1px; }
+  .senses { display: flex; flex-direction: column; gap: 5px; }
+  .sense { display: grid; grid-template-columns: 34px 1fr; column-gap: 8px; align-items: start; }
+  .pos { font-size: 11px; color: var(--accent); font-weight: 600; line-height: 1.75; white-space: nowrap; }
+  .def { font-size: 14px; line-height: 1.7; }
   .hidden-slot {
     display: flex;
     align-items: center;
@@ -168,6 +170,8 @@
     font-weight: 500;
   }
   .v-A .rule { height: 1px; background: var(--line); margin: 14px 0 10px; }
+  .v-A .pos { font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif; font-style: italic; font-weight: 500; font-size: 13px; }
+  .v-A .def { font-size: 14px; }
   .v-A .act.on { background: color-mix(in srgb, var(--star) 11%, transparent); }
   .v-A .empty-card {
     display: grid;
@@ -214,7 +218,10 @@
     letter-spacing: -.035em;
   }
   .v-B .phonetic { font-size: 11px; margin-top: 2px; }
-  .v-B .meaning { font-size: 13px; line-height: 1.65; margin-top: 8px; }
+  .v-B .senses { margin-top: 8px; gap: 3px; }
+  .v-B .sense { grid-template-columns: 30px 1fr; column-gap: 6px; }
+  .v-B .pos { font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+  .v-B .def { font-size: 13px; line-height: 1.65; }
   .v-B .rule { display: none; }
   .v-B .hidden-slot { justify-content: flex-start; padding-left: 10px; border-radius: 0; min-height: 34px; }
   .v-B .empty-card { border-top: 2px solid var(--ink); padding: 18px 0; color: var(--muted); font-size: 13px; }
@@ -248,7 +255,8 @@
   }
   .v-C .phonetic { color: #a8a093; }
   .v-C .rule { height: 1px; background: var(--line); margin: 14px 0 10px; }
-  .v-C .meaning { color: #d8d1c5; }
+  .v-C .def { color: #d8d1c5; }
+  .v-C .pos { font-size: 11px; }
   .v-C .act { border: 1px solid var(--line); border-radius: 999px; }
   .v-C .act.on { color: var(--star); border-color: var(--star); background: rgba(224, 164, 88, .1); }
   .v-C .hidden-slot { border-color: #3a3a3a; color: #8f887c; background: rgba(255, 255, 255, .02); }
@@ -460,20 +468,50 @@
 
 <script>
   const WORDS = [
-    { word: "abandon", phonetic: "/əˈbændən/", pos: "v.", meaning: "放弃；遗弃；离开；终止" },
-    { word: "evaluate", phonetic: "/ɪˈvæljueɪt/", pos: "v.", meaning: "评估；估价；评价" },
-    { word: "integrity", phonetic: "/ɪnˈteɡrəti/", pos: "n.", meaning: "正直；诚实；完整" },
-    { word: "profound", phonetic: "/prəˈfaʊnd/", pos: "adj.", meaning: "深刻的；深远的；渊博的" },
-    { word: "inevitable", phonetic: "/ɪnˈevɪtəbl/", pos: "adj.", meaning: "不可避免的；必然发生的" },
-    { word: "accumulate", phonetic: "/əˈkjuːmjəleɪt/", pos: "v.", meaning: "积累；积聚；增加" },
-    { word: "distinguish", phonetic: "/dɪˈstɪŋɡwɪʃ/", pos: "v.", meaning: "区分；辨别；使杰出" },
-    { word: "controversy", phonetic: "/ˈkɒntrəvɜːsi/", pos: "n.", meaning: "争论；争议；论战" },
-    { word: "compensate", phonetic: "/ˈkɒmpenseɪt/", pos: "v.", meaning: "补偿；赔偿；抵消" },
-    { word: "ambiguous", phonetic: "/æmˈbɪɡjuəs/", pos: "adj.", meaning: "模棱两可的；含糊不清的" },
-    { word: "coherent", phonetic: "/kəʊˈhɪərənt/", pos: "adj.", meaning: "连贯的；一致的；条理清楚的" },
-    { word: "deteriorate", phonetic: "/dɪˈtɪəriəreɪt/", pos: "v.", meaning: "恶化；变坏；退化" },
-    { word: "elaborate", phonetic: "/ɪˈlæbərət/", pos: "adj.", meaning: "精心制作的；复杂的；详尽的" },
-    { word: "feasible", phonetic: "/ˈfiːzəbl/", pos: "adj.", meaning: "可行的；行得通的" }
+    { word: "abandon", phonetic: "/əˈbændən/", senses: [
+      { pos: "v.", meaning: "放弃；遗弃；离开；终止" },
+      { pos: "n.", meaning: "放任；狂热" }
+    ]},
+    { word: "evaluate", phonetic: "/ɪˈvæljueɪt/", senses: [
+      { pos: "v.", meaning: "评估；估价；评价" }
+    ]},
+    { word: "integrity", phonetic: "/ɪnˈteɡrəti/", senses: [
+      { pos: "n.", meaning: "正直；诚实；完整" }
+    ]},
+    { word: "profound", phonetic: "/prəˈfaʊnd/", senses: [
+      { pos: "adj.", meaning: "深刻的；深远的；渊博的" }
+    ]},
+    { word: "inevitable", phonetic: "/ɪnˈevɪtəbl/", senses: [
+      { pos: "adj.", meaning: "不可避免的；必然发生的" }
+    ]},
+    { word: "accumulate", phonetic: "/əˈkjuːmjəleɪt/", senses: [
+      { pos: "v.", meaning: "积累；积聚；增加" }
+    ]},
+    { word: "distinguish", phonetic: "/dɪˈstɪŋɡwɪʃ/", senses: [
+      { pos: "v.", meaning: "区分；辨别；使杰出" }
+    ]},
+    { word: "controversy", phonetic: "/ˈkɒntrəvɜːsi/", senses: [
+      { pos: "n.", meaning: "争论；争议；论战" }
+    ]},
+    { word: "compensate", phonetic: "/ˈkɒmpenseɪt/", senses: [
+      { pos: "v.", meaning: "补偿；赔偿；抵消" }
+    ]},
+    { word: "ambiguous", phonetic: "/æmˈbɪɡjuəs/", senses: [
+      { pos: "adj.", meaning: "模棱两可的；含糊不清的" }
+    ]},
+    { word: "coherent", phonetic: "/kəʊˈhɪərənt/", senses: [
+      { pos: "adj.", meaning: "连贯的；一致的；条理清楚的" }
+    ]},
+    { word: "deteriorate", phonetic: "/dɪˈtɪəriəreɪt/", senses: [
+      { pos: "v.", meaning: "恶化；变坏；退化" }
+    ]},
+    { word: "elaborate", phonetic: "/ɪˈlæbərət/", senses: [
+      { pos: "adj.", meaning: "精心制作的；复杂的；详尽的" },
+      { pos: "v.", meaning: "详细阐述；精心制作" }
+    ]},
+    { word: "feasible", phonetic: "/ˈfiːzəbl/", senses: [
+      { pos: "adj.", meaning: "可行的；行得通的" }
+    ]}
   ];
 
   const VARIANTS = { A: "纸感编辑", B: "瑞士网格", C: "暗色专注" };
@@ -551,11 +589,15 @@
 
   function meaningZone(item, i) {
     if (item.meaningHidden) {
-      return `<div class="meaning-zone" data-action="toggle-meaning" data-i="${i}"><span class="hidden-slot">点击显示释义</span></div>`;
+      const count = item.senses.length;
+      const suffix = count > 1 ? ` · ${count} 个词性` : "";
+      return `<div class="meaning-zone" data-action="toggle-meaning" data-i="${i}"><span class="hidden-slot">点击显示释义${suffix}</span></div>`;
     }
     return `
       <div class="meaning-zone" data-action="toggle-meaning" data-i="${i}">
-        <div class="meaning"><span class="pos">${item.pos}</span>${item.meaning}</div>
+        <div class="senses">
+          ${item.senses.map((sense) => `<div class="sense"><span class="pos">${sense.pos}</span><span class="def">${sense.meaning}</span></div>`).join("")}
+        </div>
       </div>
     `;
   }

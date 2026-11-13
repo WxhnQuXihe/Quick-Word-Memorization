@@ -1,6 +1,6 @@
 # shorthand
 
-背单词 App（个人/小范围使用，不商业化）。
+神也背单词 · 背单词 App（个人/小范围使用，不商业化）。
 
 技术栈：Vue 3 + Vite + Capacitor（iOS/Android） / Spring Boot 3 + MyBatis-Plus + MySQL 8。
 
