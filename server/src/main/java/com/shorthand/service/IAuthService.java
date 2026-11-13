@@ -7,4 +7,6 @@ public interface IAuthService {
     LoginVo loginApp(LoginBo bo);
 
     LoginVo loginAdmin(LoginBo bo);
+
+    void changeAdminPassword(Long adminId, String oldPassword, String newPassword);
 }

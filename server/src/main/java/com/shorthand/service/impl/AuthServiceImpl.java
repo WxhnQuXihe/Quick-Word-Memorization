@@ -47,6 +47,17 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
+    public void changeAdminPassword(Long adminId, String oldPassword, String newPassword) {
+        AdminUser admin = adminUserMapper.selectById(adminId);
+        if (admin == null) throw new BizException("管理员不存在");
+        if (!passwordEncoder.matches(oldPassword, admin.getPassword())) {
+            throw new BizException("当前密码不对");
+        }
+        admin.setPassword(passwordEncoder.encode(newPassword));
+        adminUserMapper.updateById(admin);
+    }
+
+    @Override
     public LoginVo loginAdmin(LoginBo bo) {
         AdminUser admin = adminUserMapper.selectOne(Wrappers.<AdminUser>lambdaQuery()
                 .eq(AdminUser::getUsername, bo.getUsername()));

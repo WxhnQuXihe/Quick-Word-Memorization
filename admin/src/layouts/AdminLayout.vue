@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Grid, Collection, Document, Upload, User, ChatDotRound } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { changeAdminPassword } from '../api/admin'
 import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const pwdDialog = ref(false)
+const oldPwd = ref('')
+const newPwd = ref('')
+const saving = ref(false)
 
 const menus = [
   { name: 'dashboard', label: '总览', icon: Grid, path: '/' },
@@ -25,6 +31,18 @@ function go(path: string) {
 function logout() {
   auth.logout()
   router.push('/login')
+}
+async function savePassword() {
+  if (newPwd.value.length < 6) return ElMessage.warning('新密码至少 6 位')
+  saving.value = true
+  try {
+    await changeAdminPassword(oldPwd.value, newPwd.value)
+    ElMessage.success('密码已修改，请重新登录')
+    pwdDialog.value = false
+    logout()
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -60,13 +78,22 @@ function logout() {
           <span class="avatar">{{ auth.name.slice(0, 2).toUpperCase() }}</span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item @click="logout">退出登录</el-dropdown-item>
+              <el-dropdown-item @click="pwdDialog = true">修改密码</el-dropdown-item>
+              <el-dropdown-item divided @click="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
       </header>
       <router-view />
     </main>
+
+    <el-dialog v-model="pwdDialog" title="修改管理员密码" width="420px">
+      <el-form label-position="top">
+        <el-form-item label="当前密码"><el-input v-model="oldPwd" type="password" show-password /></el-form-item>
+        <el-form-item label="新密码"><el-input v-model="newPwd" type="password" show-password placeholder="至少 6 位" /></el-form-item>
+      </el-form>
+      <template #footer><el-button @click="pwdDialog = false">取消</el-button><el-button type="primary" :loading="saving" @click="savePassword">保存</el-button></template>
+    </el-dialog>
   </div>
 </template>
 

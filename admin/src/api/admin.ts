@@ -83,3 +83,7 @@ export function replyFeedback(id: number, reply: string): Promise<void> {
 export function getDashboard(): Promise<any> {
   return http.get('/admin/dashboard')
 }
+
+export function changeAdminPassword(oldPassword: string, newPassword: string): Promise<void> {
+  return http.post('/admin/auth/password', { oldPassword, newPassword })
+}

@@ -48,3 +48,6 @@ app/ios/App/Pods/
 
 # CI artifacts downloaded locally
 _artifacts/
+
+# Local deploy bundle
+.deploy-tmp/
