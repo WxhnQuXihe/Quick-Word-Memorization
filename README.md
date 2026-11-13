@@ -46,3 +46,12 @@ cd app && npm install && npm run dev
 ```
 
 首次建库：`mysql -uroot -p < db/schema.sql`（库名 `shorthand`）。
+
+## 发布
+
+打版本 tag 会自动构建 Android APK 和 iOS 模拟器包，并发布到 GitHub Release：
+
+```bash
+git tag v0.2.1
+git push origin v0.2.1
+```
