@@ -32,7 +32,7 @@ async function submit() {
     <div class="grid"></div>
     <div class="login-card">
       <div class="mark">S</div>
-      <div class="eyebrow">SHORTAND / ADMIN</div>
+      <div class="eyebrow">SHORTHAND / ADMIN</div>
       <h1>控制台登录</h1>
       <p>单管理员入口 · 仅限本人使用</p>
       <form @submit.prevent="submit">

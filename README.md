@@ -1,4 +1,4 @@
-# Shortand
+# Shorthand
 
 神也背单词 · 背单词 App（个人/小范围使用，不商业化）。
 
@@ -34,7 +34,7 @@ assets/     图标与启动页
 ```bash
 # 后端（8081）
 cd server
-MYSQL_USERNAME=root MYSQL_PASSWORD=root SERVER_PORT=8081 java -jar target/shortand-server-0.1.0.jar
+MYSQL_USERNAME=root MYSQL_PASSWORD=root SERVER_PORT=8081 java -jar target/shorthand-server-0.1.0.jar
 
 # 管理后台（5174）
 cd admin && npm install && npm run dev
@@ -43,4 +43,4 @@ cd admin && npm install && npm run dev
 cd app && npm install && npm run dev
 ```
 
-首次建库：`mysql -uroot -p < db/schema.sql`（库名 `shortand`）。
+首次建库：`mysql -uroot -p < db/schema.sql`（库名 `shorthand`）。

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shortand API smoke test. Requires a running backend with qx/123456 and at least one published book.
+# Shorthand API smoke test. Requires a running backend with qx/123456 and at least one published book.
 set -euo pipefail
 BASE="${BASE:-http://127.0.0.1:8081}"
 ADMIN_USER="${ADMIN_USER:-admin}"

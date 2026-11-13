@@ -1,0 +1,20 @@
+package com.shorthand.controller.admin;
+
+import com.shorthand.common.Result;
+import com.shorthand.service.IAdminDashboardService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/admin/dashboard")
+@RequiredArgsConstructor
+public class AdminDashboardController {
+    private final IAdminDashboardService adminDashboardService;
+
+    @GetMapping
+    public Result overview() {
+        return Result.ok(adminDashboardService.overview());
+    }
+}

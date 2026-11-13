@@ -1,4 +1,4 @@
-name: deploy-shortand
+name: deploy-shorthand
 
 on:
   push:
@@ -44,11 +44,11 @@ jobs:
           mkdir -p deploy/web/admin
           cp -r app/dist/* deploy/web/
           cp -r admin/dist/* deploy/web/admin/
-          cp server/target/shortand-server-*.jar deploy/server.jar
+          cp server/target/shorthand-server-*.jar deploy/server.jar
 
       - uses: actions/upload-artifact@v4
         with:
-          name: shortand-dist
+          name: shorthand-dist
           path: deploy
 
   deploy:
@@ -57,7 +57,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: shortand-dist
+          name: shorthand-dist
           path: deploy
 
       - name: Upload to server
@@ -67,7 +67,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: "deploy/*"
-          target: "/home/deploy/upload-shortand"
+          target: "/home/deploy/upload-shorthand"
           strip_components: 1
 
       - name: Restart & health check
@@ -78,15 +78,15 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            cd /home/deploy/upload-shortand
+            cd /home/deploy/upload-shorthand
             chmod 644 server.jar
             chmod -R a+rX web
 
-            cp /opt/shortand/releases/server.jar /opt/shortand/releases/server.jar.prev 2>/dev/null || true
-            cp server.jar /opt/shortand/releases/server.jar
-            rsync -a --delete web/ /opt/shortand/web/
+            cp /opt/shorthand/releases/server.jar /opt/shorthand/releases/server.jar.prev 2>/dev/null || true
+            cp server.jar /opt/shorthand/releases/server.jar
+            rsync -a --delete web/ /opt/shorthand/web/
 
-            sudo systemctl restart shortand
+            sudo systemctl restart shorthand
 
             for i in $(seq 1 45); do
               if curl -fsS http://127.0.0.1:8081/actuator/health >/dev/null; then
@@ -97,8 +97,8 @@ jobs:
             done
 
             echo "health check failed, rollback"
-            if [ -f /opt/shortand/releases/server.jar.prev ]; then
-              cp /opt/shortand/releases/server.jar.prev /opt/shortand/releases/server.jar
-              sudo systemctl restart shortand
+            if [ -f /opt/shorthand/releases/server.jar.prev ]; then
+              cp /opt/shorthand/releases/server.jar.prev /opt/shorthand/releases/server.jar
+              sudo systemctl restart shorthand
             fi
             exit 1

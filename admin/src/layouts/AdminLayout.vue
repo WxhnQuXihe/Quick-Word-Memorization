@@ -52,7 +52,7 @@ function logout() {
     <main class="main">
       <header class="top">
         <div>
-          <div class="eyebrow">SHORTAND / CONTROL</div>
+          <div class="eyebrow">SHORTHAND / CONTROL</div>
           <h1>{{ title }}</h1>
         </div>
         <div class="status"><span class="dot"></span> ALL SYSTEMS NOMINAL</div>

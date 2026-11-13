@@ -22,7 +22,7 @@ function logout() {
   <div class="page me">
     <header class="profile">
       <div class="avatar">{{ (auth.name || '神').slice(0, 1) }}</div>
-      <div><h1 class="serif">{{ auth.name || '神也' }}</h1><p>@{{ auth.name || 'shortand' }}</p></div>
+      <div><h1 class="serif">{{ auth.name || '神也' }}</h1><p>@{{ auth.name || 'shorthand' }}</p></div>
     </header>
 
     <section class="card fav-card">

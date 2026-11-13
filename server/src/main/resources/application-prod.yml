@@ -6,6 +6,6 @@ spring:
 
 logging:
   file:
-    name: ${LOG_FILE:/opt/shortand/logs/shortand.log}
+    name: ${LOG_FILE:/opt/shorthand/logs/shorthand.log}
   level:
     root: info
