@@ -35,3 +35,6 @@ data/uploads/
 
 # Local design renders
 _ui_pages/
+
+# Local one-off wizards
+scripts/local/
