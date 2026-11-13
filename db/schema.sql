@@ -1,13 +1,13 @@
 -- ============================================================================
--- shorthand · 背单词 App —— 数据库结构 v0.4（MySQL 8.0 / utf8mb4_unicode_ci）
--- 服务器：47.95.66.191，与 setbook 共用 MySQL，独立库 shorthand
+-- Shortand · 背单词 App —— 数据库结构 v0.4（MySQL 8.0 / utf8mb4_unicode_ci）
+-- 服务器：47.95.66.191，与 setbook 共用 MySQL，独立库 shortand
 -- 设计：不做遗忘曲线 / 不做学习规划；每组 10 词，熟词即时随机替换
 -- 说明：业务代码不写 SQL，全部用 MyBatis-Plus Wrapper；本文件只用于首次建库
 -- ============================================================================
 
-CREATE DATABASE IF NOT EXISTS `shorthand`
+CREATE DATABASE IF NOT EXISTS `shortand`
   DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `shorthand`;
+USE `shortand`;
 
 -- ---------------------------------------------------------------------------
 -- 1. C 端用户（不开放注册，由后台创建）
