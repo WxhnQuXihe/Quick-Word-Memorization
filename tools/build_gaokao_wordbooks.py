@@ -48,6 +48,7 @@ def load_known():
 def canonical(word, known, phrase=False):
     raw=re.sub(r"\s+"," ",str(word or "")).strip()
     raw=raw.strip(" .,;，。；：")
+    if raw.lower()=="a(an)": raw="a (an)"
     if not raw: return "", "", ""
     key=raw.lower()
     if key in known: return known[key][0], known[key][1], known[key][2]
@@ -55,8 +56,16 @@ def canonical(word, known, phrase=False):
     alt=alt.lower()
     if alt in known: return known[alt][0], known[alt][1], known[alt][2]
     if phrase:
-        fix={"a blt(of)":"a bit (of)","a palr of":"a pair of","a plece of":"a piece of"}
+        fix={
+            "a blt(of)":"a bit (of)", "a palr of":"a pair of", "a plece of":"a piece of",
+            "abit(of)":"a bit (of)", "afew":"a few", "agreatdeal":"a great deal",
+            "a good/greatmany":"a good/great many", "akindof":"a kind of",
+            "alittle":"a little", "alotof":"a lot of", "anumberof":"a number of",
+            "apairof":"a pair of", "apieceof":"a piece of"
+        }
         if key in fix: return fix[key], "", ""
+        nospace=re.sub(r"\s+","",raw).lower()
+        if nospace in PHRASES_NOSPACE: return PHRASES_NOSPACE[nospace], "", ""
         if key in PHRASES: return PHRASES[key][0], "", ""
         return raw, "", ""
     if " " not in raw and len(raw)>=4:
@@ -76,14 +85,17 @@ def write_book(rows, path):
 
 def main():
     known=load_known()
-    global PHRASES
+    global PHRASES, PHRASES_NOSPACE
     PHRASES={}
+    PHRASES_NOSPACE={}
     pp=OUT/"四六级常用词组_导入.xlsx"
     if pp.exists():
         wb=load_workbook(pp,read_only=True); ws=wb.active
         for row in ws.iter_rows(min_row=2,values_only=True):
             w=str(row[1] or "").strip()
-            if w: PHRASES[w.lower()]=(w,row[2] or "",row[5] or "")
+            if w:
+                PHRASES[w.lower()]=(w,row[2] or "",row[5] or "")
+                PHRASES_NOSPACE[re.sub(r"\s+","",w).lower()]=w
     raw=[line.split("\t") for line in ROWS.read_text(encoding="utf-8").splitlines()]
     split=None
     for i,r in enumerate(raw):
