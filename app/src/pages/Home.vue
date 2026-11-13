@@ -20,9 +20,7 @@ async function load() {
   loading.value = true
   try {
     home.value = await getHome()
-    if (!home.value?.currentBook) {
-      books.value = await listBooks()
-    }
+    books.value = await listBooks()
   } finally {
     loading.value = false
   }

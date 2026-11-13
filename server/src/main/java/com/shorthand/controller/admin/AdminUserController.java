@@ -6,6 +6,7 @@ import com.shorthand.domain.bo.ResetPasswordBo;
 import com.shorthand.service.IAdminUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,6 +44,12 @@ public class AdminUserController {
     @PatchMapping("/{id}/status")
     public Result status(@PathVariable Long id, @RequestParam Integer status) {
         adminUserService.updateStatus(id, status);
+        return Result.ok();
+    }
+
+    @DeleteMapping("/{id}")
+    public Result delete(@PathVariable Long id) {
+        adminUserService.delete(id);
         return Result.ok();
     }
 }

@@ -11,4 +11,6 @@ public interface IAdminUserService {
     void resetPassword(Long userId, String password);
 
     void updateStatus(Long userId, Integer status);
+
+    void delete(Long userId);
 }

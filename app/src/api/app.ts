@@ -47,3 +47,11 @@ export function listKnown(pageNo = 1, pageSize = 20): Promise<any> {
 export function removeKnown(wordId: number): Promise<any> {
   return http.delete(`/known/${wordId}`)
 }
+
+export function submitFeedback(content: string, contact = ''): Promise<void> {
+  return http.post('/feedback', { content, contact })
+}
+
+export function myFeedback(pageNo = 1, pageSize = 20): Promise<any> {
+  return http.get('/feedback/mine', { params: { pageNo, pageSize } })
+}

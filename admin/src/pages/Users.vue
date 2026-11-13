@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createUser, listUsers, resetPassword, updateUserStatus } from '../api/admin'
+import { createUser, deleteUser, listUsers, resetPassword, updateUserStatus } from '../api/admin'
 
 const rows = ref<any[]>([])
 const total = ref(0)
@@ -52,6 +52,17 @@ async function toggle(row: any) {
   ElMessage.success(next === 1 ? '已启用' : '已禁用')
 }
 
+async function remove(row: any) {
+  await ElMessageBox.confirm(
+    `删除「${row.username}」后，学习记录、收藏、熟词本和反馈都会清空，且不可恢复。`,
+    '确认删除用户',
+    { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' }
+  )
+  await deleteUser(row.id)
+  ElMessage.success('用户已删除')
+  await load()
+}
+
 onMounted(load)
 </script>
 
@@ -77,6 +88,7 @@ onMounted(load)
             <td class="right">
               <el-button link @click="reset(u)">重置密码</el-button>
               <el-button link @click="toggle(u)">{{ u.status === 1 ? '禁用' : '启用' }}</el-button>
+              <el-button link type="danger" @click="remove(u)">删除</el-button>
             </td>
           </tr>
           <tr v-if="!rows.length"><td colspan="6" class="empty">还没有用户，点右上角新建一个。</td></tr>

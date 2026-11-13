@@ -87,3 +87,7 @@ export function getDashboard(): Promise<any> {
 export function changeAdminPassword(oldPassword: string, newPassword: string): Promise<void> {
   return http.post('/admin/auth/password', { oldPassword, newPassword })
 }
+
+export function deleteUser(id: number): Promise<void> {
+  return http.delete(`/admin/users/${id}`)
+}
