@@ -38,3 +38,9 @@ _ui_pages/
 
 # Local one-off wizards
 scripts/local/
+
+# Capacitor generated web assets / pods
+app/android/app/src/main/assets/public/
+app/ios/App/App/public/
+app/ios/Pods/
+app/ios/App/Pods/
