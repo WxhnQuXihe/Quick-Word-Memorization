@@ -98,9 +98,9 @@ jobs:
             set -e
             cd /home/deploy/upload-shorthand
             chmod 644 server.jar
-            chmod -R a+rX web
 
             cp /opt/shorthand/releases/server.jar /opt/shorthand/releases/server.jar.prev 2>/dev/null || true
+            rm -f /opt/shorthand/releases/server.jar
             cp server.jar /opt/shorthand/releases/server.jar
             rsync -a --delete web/ /opt/shorthand/web/
 
@@ -116,6 +116,7 @@ jobs:
 
             echo "health check failed, rollback"
             if [ -f /opt/shorthand/releases/server.jar.prev ]; then
+              rm -f /opt/shorthand/releases/server.jar
               cp /opt/shorthand/releases/server.jar.prev /opt/shorthand/releases/server.jar
               sudo systemctl restart shorthand
             fi
