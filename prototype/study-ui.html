@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>拾词 · 背单词 UI 原型</title>
+<!--
+  THROWAWAY UI PROTOTYPE — not production code.
+  Three structurally different variants of the study screen, switchable with ?variant=A|B|C.
+  Question: which visual direction should shorthand use?
+-->
+<style>
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background .25s ease, color .25s ease;
+  }
+  button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+  svg { display: block; }
+
+  body.v-A {
+    --bg: #f5f1e8;
+    --surface: #fffdf8;
+    --ink: #1a1713;
+    --muted: #7a7266;
+    --line: #e2dacb;
+    --accent: #b4432f;
+    --star: #c98a2e;
+    --ok: #2f6b4f;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body.v-B {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --ink: #0a0a0a;
+    --muted: #6b6b6b;
+    --line: #d9d9d9;
+    --accent: #1d4ed8;
+    --star: #1d4ed8;
+    --ok: #15803d;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body.v-C {
+    --bg: #0f0f0f;
+    --surface: #181818;
+    --ink: #f4efe6;
+    --muted: #9a948a;
+    --line: #2a2a2a;
+    --accent: #e0a458;
+    --star: #e0a458;
+    --ok: #7fb69b;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  .app {
+    min-height: 100vh;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 20px 160px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 22px 0 12px;
+  }
+  .back {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+    flex: none;
+    transition: background .2s;
+  }
+  .back:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .book { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .book strong {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .book span { font-size: 11px; color: var(--muted); letter-spacing: .05em; }
+  .group { text-align: right; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .group strong { color: var(--ink); font-size: 13px; font-weight: 600; }
+
+  .progress { height: 2px; background: var(--line); overflow: hidden; margin-bottom: 20px; }
+  .progress i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .grid { grid-template-columns: 1fr 1fr; gap: 16px; }
+  }
+
+  .index { font-size: 11px; letter-spacing: .12em; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .actions { display: flex; gap: 4px; }
+  .act {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    color: var(--muted);
+    transition: color .2s, background .2s, border-color .2s;
+  }
+  .act svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .act.on { color: var(--star); }
+
+  .word-zone, .meaning-zone { cursor: pointer; }
+  .word { margin: 2px 0 4px; }
+  .phonetic { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+  .meaning { font-size: 14px; line-height: 1.7; }
+  .pos { display: inline-block; font-size: 11px; color: var(--accent); font-weight: 600; margin-right: 6px; vertical-align: 1px; }
+  .hidden-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    background: transparent;
+    transition: border-color .2s, background .2s;
+  }
+  .hidden-slot:hover { border-color: var(--accent); }
+  .meaning-zone .hidden-slot { min-height: 38px; }
+
+  /* ── Variant A: paper editorial ─────────────────────────────────────── */
+  .v-A .topbar { border-bottom: 0; }
+  .v-A .a-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 18px 20px 16px;
+    transition: background .25s, transform .2s;
+  }
+  .v-A .a-card.flash { animation: flashA .55s ease; }
+  @keyframes flashA { 0% { background: #efe2cf; } 100% { background: var(--surface); } }
+  .v-A .a-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .v-A .word {
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    font-size: 32px;
+    line-height: 1.08;
+    letter-spacing: -.02em;
+    font-weight: 500;
+  }
+  .v-A .rule { height: 1px; background: var(--line); margin: 14px 0 10px; }
+  .v-A .act.on { background: color-mix(in srgb, var(--star) 11%, transparent); }
+  .v-A .empty-card {
+    display: grid;
+    place-items: center;
+    min-height: 168px;
+    border-style: dashed;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* ── Variant B: Swiss type grid ─────────────────────────────────────── */
+  .v-B .app { max-width: 1100px; }
+  .v-B .topbar { border-bottom: 2px solid var(--ink); padding-bottom: 14px; margin-bottom: 10px; }
+  .v-B .back { border-radius: 0; border: 1px solid var(--ink); width: 34px; height: 34px; font-size: 17px; }
+  .v-B .book strong { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+  .v-B .progress { height: 3px; background: #ececec; margin-bottom: 0; }
+  .v-B .grid { gap: 0 48px; }
+  .v-B .b-card {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    column-gap: 10px;
+    border-top: 2px solid var(--ink);
+    padding: 14px 0 20px;
+  }
+  .v-B .b-card.flash { animation: flashB .5s ease; }
+  @keyframes flashB { 0% { background: #eef2ff; } 100% { background: transparent; } }
+  .v-B .b-index {
+    font-size: 38px;
+    line-height: 1;
+    font-weight: 200;
+    color: #c9c9c9;
+    letter-spacing: -.05em;
+    font-variant-numeric: tabular-nums;
+  }
+  .v-B .b-main { min-width: 0; }
+  .v-B .b-top { display: flex; justify-content: flex-end; margin-bottom: 2px; }
+  .v-B .act { border: 1px solid var(--line); border-radius: 0; padding: 4px 6px; font-size: 10px; }
+  .v-B .act.on { border-color: var(--star); }
+  .v-B .word {
+    font-family: "Helvetica Neue", Arial, "PingFang SC", sans-serif;
+    font-size: 27px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -.035em;
+  }
+  .v-B .phonetic { font-size: 11px; margin-top: 2px; }
+  .v-B .meaning { font-size: 13px; line-height: 1.65; margin-top: 8px; }
+  .v-B .rule { display: none; }
+  .v-B .hidden-slot { justify-content: flex-start; padding-left: 10px; border-radius: 0; min-height: 34px; }
+  .v-B .empty-card { border-top: 2px solid var(--ink); padding: 18px 0; color: var(--muted); font-size: 13px; }
+
+  /* ── Variant C: dark focus ──────────────────────────────────────────── */
+  .v-C .c-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 18px 20px;
+  }
+  .v-C .c-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 16px; bottom: 16px;
+    width: 2px;
+    background: var(--accent);
+    opacity: .55;
+  }
+  .v-C .c-card.flash { animation: flashC .55s ease; }
+  @keyframes flashC { 0% { background: #2a241b; } 100% { background: var(--surface); } }
+  .v-C .c-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .v-C .word {
+    font-family: Inter, -apple-system, "Segoe UI", sans-serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -.02em;
+    line-height: 1.12;
+  }
+  .v-C .phonetic { color: #a8a093; }
+  .v-C .rule { height: 1px; background: var(--line); margin: 14px 0 10px; }
+  .v-C .meaning { color: #d8d1c5; }
+  .v-C .act { border: 1px solid var(--line); border-radius: 999px; }
+  .v-C .act.on { color: var(--star); border-color: var(--star); background: rgba(224, 164, 88, .1); }
+  .v-C .hidden-slot { border-color: #3a3a3a; color: #8f887c; background: rgba(255, 255, 255, .02); }
+  .v-C .empty-card {
+    min-height: 168px;
+    display: grid;
+    place-items: center;
+    border-style: dashed;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* ── Bottom bars ────────────────────────────────────────────────────── */
+  .hide-actions { display: flex; gap: 2px; flex: 1; min-width: 0; }
+
+  .v-A .bottom {
+    position: fixed;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(720px, calc(100% - 28px));
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 253, 248, .9);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px;
+    box-shadow: 0 12px 40px rgba(50, 35, 20, .12);
+    z-index: 60;
+  }
+  .v-A .bottom button { border-radius: 999px; padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+  .v-A .bottom button:hover { background: rgba(0, 0, 0, .04); }
+  .v-A .bottom .next { background: var(--accent); color: #fff; font-weight: 600; padding: 11px 18px; min-width: 118px; }
+  .v-A .bottom .next:hover { background: #9d3525; }
+  .v-A .bottom .next.armed { background: #7b2d21; animation: pulse .7s infinite alternate; }
+
+  .v-B .bottom {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    background: #fff;
+    border-top: 2px solid var(--ink);
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+    z-index: 60;
+  }
+  .v-B .bottom button { border: 1px solid var(--ink); background: #fff; padding: 12px 16px; font-size: 12px; font-weight: 500; }
+  .v-B .bottom button:hover { background: #f3f3f3; }
+  .v-B .bottom .next { background: var(--ink); color: #fff; min-width: 150px; }
+  .v-B .bottom .next:hover { background: #262626; }
+  .v-B .bottom .next.armed { background: var(--accent); border-color: var(--accent); animation: pulse .7s infinite alternate; }
+
+  .v-C .bottom {
+    position: fixed;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(720px, calc(100% - 28px));
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(24, 24, 24, .9);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 7px;
+    box-shadow: 0 16px 50px rgba(0, 0, 0, .5);
+    z-index: 60;
+  }
+  .v-C .bottom button { border-radius: 10px; padding: 10px 12px; font-size: 12px; color: var(--ink); white-space: nowrap; }
+  .v-C .bottom button:hover { background: rgba(255, 255, 255, .06); }
+  .v-C .bottom .next { background: var(--accent); color: #17130d; font-weight: 700; min-width: 118px; }
+  .v-C .bottom .next:hover { background: #f0b66b; }
+  .v-C .bottom .next.armed { background: #f0b66b; animation: pulse .7s infinite alternate; }
+
+  @keyframes pulse { from { opacity: .75; } to { opacity: 1; } }
+
+  /* ── Dialog ─────────────────────────────────────────────────────────── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 12, 8, .5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    z-index: 200;
+    animation: fadeIn .18s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    width: min(420px, 100%);
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 26px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .35);
+    animation: modalIn .22s ease-out;
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+  .modal-kicker { font-size: 11px; letter-spacing: .18em; color: var(--accent); font-weight: 700; }
+  .modal h2 {
+    margin: 8px 0 6px;
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: -.02em;
+  }
+  .modal p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--muted); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 22px; }
+  .modal-actions button { flex: 1; padding: 12px 10px; border-radius: 12px; font-size: 12px; line-height: 1.4; transition: transform .15s, background .2s; }
+  .modal-actions button:active { transform: scale(.98); }
+  .ghost { border: 1px solid var(--line); background: transparent; color: var(--ink); }
+  .ghost:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+  .danger { background: var(--accent); color: #fff; border: 1px solid transparent; }
+  .danger:hover { filter: brightness(.94); }
+  .v-B .modal { border-radius: 0; border: 2px solid var(--ink); }
+  .v-B .modal h2 { font-family: "Helvetica Neue", Arial, sans-serif; }
+  .v-C .modal { background: #1b1b1b; }
+  .v-C .modal h2 { color: var(--ink); }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 100px;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--surface);
+    padding: 9px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    z-index: 300;
+    animation: toastIn .2s ease;
+    white-space: nowrap;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+  .exit-screen {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 24px;
+  }
+  .exit-mark { font-size: 54px; margin-bottom: 6px; }
+  .exit-screen h1 { font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif; font-size: 38px; margin: 0 0 8px; }
+  .exit-screen p { color: var(--muted); font-size: 14px; margin: 0 0 22px; }
+  .exit-screen button { background: var(--accent); color: #fff; padding: 12px 26px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+
+  /* ── Prototype switcher (not part of the design) ─────────────────────── */
+  .switcher {
+    position: fixed;
+    left: 50%;
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 150;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #111;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: 999px;
+    padding: 7px 9px;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, .28);
+    font-size: 11px;
+    letter-spacing: .02em;
+  }
+  .switcher button {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+    font-size: 16px;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+  }
+  .switcher button:hover { background: rgba(255, 255, 255, .22); }
+  .switcher b { font-weight: 700; }
+  .switcher span { white-space: nowrap; }
+
+  @media (max-width: 600px) {
+    .app { padding: 0 14px 150px; }
+    .v-A .word { font-size: 29px; }
+    .v-B .b-card { grid-template-columns: 42px 1fr; }
+    .v-B .b-index { font-size: 32px; }
+    .v-B .word { font-size: 24px; }
+    .v-B .bottom button { padding: 11px 10px; font-size: 11px; }
+    .v-B .bottom .next { min-width: 116px; }
+    .v-A .bottom button, .v-C .bottom button { padding: 9px 9px; font-size: 11px; }
+    .v-A .bottom .next, .v-C .bottom .next { min-width: 104px; padding: 10px 12px; }
+    .modal h2 { font-size: 27px; }
+    .modal-actions { flex-direction: column-reverse; }
+    .switcher { bottom: calc(92px + env(safe-area-inset-bottom)); }
+  }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <div class="switcher" id="switcher" aria-label="原型变体切换"></div>
+
+<script>
+  const WORDS = [
+    { word: "abandon", phonetic: "/əˈbændən/", pos: "v.", meaning: "放弃；遗弃；离开；终止" },
+    { word: "evaluate", phonetic: "/ɪˈvæljueɪt/", pos: "v.", meaning: "评估；估价；评价" },
+    { word: "integrity", phonetic: "/ɪnˈteɡrəti/", pos: "n.", meaning: "正直；诚实；完整" },
+    { word: "profound", phonetic: "/prəˈfaʊnd/", pos: "adj.", meaning: "深刻的；深远的；渊博的" },
+    { word: "inevitable", phonetic: "/ɪnˈevɪtəbl/", pos: "adj.", meaning: "不可避免的；必然发生的" },
+    { word: "accumulate", phonetic: "/əˈkjuːmjəleɪt/", pos: "v.", meaning: "积累；积聚；增加" },
+    { word: "distinguish", phonetic: "/dɪˈstɪŋɡwɪʃ/", pos: "v.", meaning: "区分；辨别；使杰出" },
+    { word: "controversy", phonetic: "/ˈkɒntrəvɜːsi/", pos: "n.", meaning: "争论；争议；论战" },
+    { word: "compensate", phonetic: "/ˈkɒmpenseɪt/", pos: "v.", meaning: "补偿；赔偿；抵消" },
+    { word: "ambiguous", phonetic: "/æmˈbɪɡjuəs/", pos: "adj.", meaning: "模棱两可的；含糊不清的" },
+    { word: "coherent", phonetic: "/kəʊˈhɪərənt/", pos: "adj.", meaning: "连贯的；一致的；条理清楚的" },
+    { word: "deteriorate", phonetic: "/dɪˈtɪəriəreɪt/", pos: "v.", meaning: "恶化；变坏；退化" },
+    { word: "elaborate", phonetic: "/ɪˈlæbərət/", pos: "adj.", meaning: "精心制作的；复杂的；详尽的" },
+    { word: "feasible", phonetic: "/ˈfiːzəbl/", pos: "adj.", meaning: "可行的；行得通的" }
+  ];
+
+  const VARIANTS = { A: "纸感编辑", B: "瑞士网格", C: "暗色专注" };
+  const STAR = '<svg viewBox="0 0 24 24"><path d="M12 3.5l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.5l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3.5z"/></svg>';
+  const CHECK = '<svg viewBox="0 0 24 24"><path d="M4.5 12.5l4.5 4.5L19.5 6.5"/></svg>';
+  const LEFT = '<svg viewBox="0 0 24 24" width="18" height="18"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  const favorites = new Set(["profound", "inevitable"]);
+
+  const params = new URLSearchParams(location.search);
+  const initialVariant = ["A", "B", "C"].includes(params.get("variant")) ? params.get("variant") : "A";
+
+  const state = {
+    variant: initialVariant,
+    groupNo: 3,
+    group: [],
+    dialog: params.get("state") === "dialog",
+    exited: params.get("state") === "exit",
+    nextArmed: false,
+    nextTimer: null,
+    toast: ""
+  };
+
+  function makeItem(word) {
+    return {
+      ...word,
+      wordHidden: false,
+      meaningHidden: false,
+      favorite: favorites.has(word.word),
+      flash: false,
+      empty: false
+    };
+  }
+
+  function initGroup() {
+    state.group = WORDS.slice(0, 10).map(makeItem);
+  }
+
+  function activeItems() {
+    return state.group.filter((item) => !item.empty);
+  }
+
+  function allWordsHidden() {
+    const items = activeItems();
+    return items.length > 0 && items.every((item) => item.wordHidden);
+  }
+
+  function allMeaningsHidden() {
+    const items = activeItems();
+    return items.length > 0 && items.every((item) => item.meaningHidden);
+  }
+
+  function topbarHTML() {
+    return `
+      <header class="topbar">
+        <button class="back" data-action="exit" aria-label="退出背单词">${LEFT}</button>
+        <div class="book"><strong>四级大纲</strong><span>4427 词</span></div>
+        <div class="group"><strong>第 ${state.groupNo} 组</strong><span> / 443</span></div>
+      </header>
+      <div class="progress"><i style="width:${Math.min(100, (state.groupNo / 443) * 100)}%"></i></div>
+    `;
+  }
+
+  function wordZone(item, i) {
+    if (item.wordHidden) {
+      return `<div class="word-zone" data-action="toggle-word" data-i="${i}"><span class="hidden-slot">点击显示单词</span></div>`;
+    }
+    return `
+      <div class="word-zone" data-action="toggle-word" data-i="${i}">
+        <div class="word">${item.word}</div>
+        <div class="phonetic">${item.phonetic}</div>
+      </div>
+    `;
+  }
+
+  function meaningZone(item, i) {
+    if (item.meaningHidden) {
+      return `<div class="meaning-zone" data-action="toggle-meaning" data-i="${i}"><span class="hidden-slot">点击显示释义</span></div>`;
+    }
+    return `
+      <div class="meaning-zone" data-action="toggle-meaning" data-i="${i}">
+        <div class="meaning"><span class="pos">${item.pos}</span>${item.meaning}</div>
+      </div>
+    `;
+  }
+
+  function actionsHTML(item, i) {
+    return `
+      <div class="actions">
+        <button class="act" data-action="known" data-i="${i}" aria-label="标熟">${CHECK}<span>标熟</span></button>
+        <button class="act ${item.favorite ? "on" : ""}" data-action="star" data-i="${i}" aria-pressed="${item.favorite}" aria-label="收藏">${STAR}<span>${item.favorite ? "已收藏" : "收藏"}</span></button>
+      </div>
+    `;
+  }
+
+  function emptyCard(className) {
+    return `<article class="${className} empty-card">本组已全部标熟</article>`;
+  }
+
+  function cardA(item, i) {
+    if (item.empty) return emptyCard("a-card");
+    return `
+      <article class="a-card ${item.flash ? "flash" : ""}">
+        <div class="a-top"><span class="index">${String(i + 1).padStart(2, "0")}</span>${actionsHTML(item, i)}</div>
+        ${wordZone(item, i)}
+        <div class="rule"></div>
+        ${meaningZone(item, i)}
+      </article>
+    `;
+  }
+
+  function cardB(item, i) {
+    if (item.empty) return emptyCard("b-card");
+    return `
+      <article class="b-card ${item.flash ? "flash" : ""}">
+        <div class="b-index">${String(i + 1).padStart(2, "0")}</div>
+        <div class="b-main">
+          <div class="b-top">${actionsHTML(item, i)}</div>
+          ${wordZone(item, i)}
+          ${meaningZone(item, i)}
+        </div>
+      </article>
+    `;
+  }
+
+  function cardC(item, i) {
+    if (item.empty) return emptyCard("c-card");
+    return `
+      <article class="c-card ${item.flash ? "flash" : ""}">
+        <div class="c-top"><span class="index">${String(i + 1).padStart(2, "0")}</span>${actionsHTML(item, i)}</div>
+        ${wordZone(item, i)}
+        <div class="rule"></div>
+        ${meaningZone(item, i)}
+      </article>
+    `;
+  }
+
+  function gridHTML() {
+    const render = state.variant === "A" ? cardA : state.variant === "B" ? cardB : cardC;
+    return `<main class="grid">${state.group.map(render).join("")}</main>`;
+  }
+
+  function bottomHTML() {
+    return `
+      <footer class="bottom">
+        <div class="hide-actions">
+          <button data-action="hide-words">${allWordsHidden() ? "显示单词" : "隐藏单词"}</button>
+          <button data-action="hide-meanings">${allMeaningsHidden() ? "显示释义" : "隐藏释义"}</button>
+        </div>
+        <button class="next ${state.nextArmed ? "armed" : ""}" data-action="next">${state.nextArmed ? "再点一次进入下一组" : "下一组"}</button>
+      </footer>
+    `;
+  }
+
+  function dialogHTML() {
+    return `
+      <div class="overlay" data-action="cancel-exit">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exit-title" data-stop="1">
+          <div class="modal-kicker">先别走</div>
+          <h2 id="exit-title">要耍起了吗？</h2>
+          <p>这一组还没背完，确定现在就走？</p>
+          <div class="modal-actions">
+            <button class="ghost" data-action="cancel-exit">我才没有想耍起</button>
+            <button class="danger" data-action="confirm-exit">不说了先耍起</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function exitHTML() {
+    return `
+      <div class="exit-screen">
+        <div class="exit-mark">☕</div>
+        <h1>去耍了</h1>
+        <p>这一组先欠着，回来再背。</p>
+        <button data-action="reenter">重新进入</button>
+      </div>
+    `;
+  }
+
+  function render() {
+    document.body.className = `v-${state.variant}`;
+    const app = document.getElementById("app");
+    if (state.exited) {
+      app.innerHTML = exitHTML();
+      return;
+    }
+    app.innerHTML = `
+      <div class="app">
+        ${topbarHTML()}
+        ${gridHTML()}
+        ${bottomHTML()}
+        ${state.dialog ? dialogHTML() : ""}
+        ${state.toast ? `<div class="toast">${state.toast}</div>` : ""}
+      </div>
+    `;
+  }
+
+  function renderSwitcher() {
+    document.getElementById("switcher").innerHTML = `
+      <button data-nav="prev" aria-label="上一个变体">‹</button>
+      <span><b>${state.variant}</b> · ${VARIANTS[state.variant]}</span>
+      <button data-nav="next" aria-label="下一个变体">›</button>
+    `;
+  }
+
+  function setVariant(variant) {
+    state.variant = variant;
+    const url = new URL(location.href);
+    url.searchParams.set("variant", variant);
+    history.replaceState(null, "", url);
+    render();
+    renderSwitcher();
+  }
+
+  function toggleWord(i) {
+    const item = state.group[i];
+    if (!item || item.empty) return;
+    item.wordHidden = !item.wordHidden;
+    render();
+  }
+
+  function toggleMeaning(i) {
+    const item = state.group[i];
+    if (!item || item.empty) return;
+    item.meaningHidden = !item.meaningHidden;
+    render();
+  }
+
+  function toggleStar(i) {
+    const item = state.group[i];
+    if (!item || item.empty) return;
+    if (favorites.has(item.word)) favorites.delete(item.word);
+    else favorites.add(item.word);
+    item.favorite = favorites.has(item.word);
+    render();
+  }
+
+  function markKnown(i) {
+    const item = state.group[i];
+    if (!item || item.empty) return;
+    const used = new Set(activeItems().map((x) => x.word));
+    const candidates = WORDS.filter((w) => !used.has(w.word));
+    if (!candidates.length) {
+      state.group[i] = { ...item, empty: true };
+      render();
+      return;
+    }
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    state.group[i] = makeItem(pick);
+    state.group[i].flash = true;
+    setTimeout(() => {
+      if (state.group[i]) {
+        state.group[i].flash = false;
+        render();
+      }
+    }, 550);
+    render();
+  }
+
+  function toggleAllWords() {
+    const hide = !allWordsHidden();
+    activeItems().forEach((item) => { item.wordHidden = hide; });
+    render();
+  }
+
+  function toggleAllMeanings() {
+    const hide = !allMeaningsHidden();
+    activeItems().forEach((item) => { item.meaningHidden = hide; });
+    render();
+  }
+
+  function nextGroup() {
+    const start = (state.groupNo * 10) % WORDS.length;
+    state.group = Array.from({ length: 10 }, (_, i) => makeItem(WORDS[(start + i) % WORDS.length]));
+    state.groupNo += 1;
+    state.nextArmed = false;
+    clearTimeout(state.nextTimer);
+    state.toast = `第 ${state.groupNo} 组`;
+    setTimeout(() => {
+      state.toast = "";
+      render();
+    }, 1400);
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleNext() {
+    if (state.nextArmed) {
+      clearTimeout(state.nextTimer);
+      state.nextArmed = false;
+      nextGroup();
+      return;
+    }
+    state.nextArmed = true;
+    state.nextTimer = setTimeout(() => {
+      state.nextArmed = false;
+      render();
+    }, 3000);
+    render();
+  }
+
+  document.getElementById("app").addEventListener("click", (event) => {
+    const el = event.target.closest("[data-action]");
+    if (!el) return;
+    if (el.dataset.stop) return;
+    const action = el.dataset.action;
+    const i = Number(el.dataset.i);
+
+    if (action === "exit") { state.dialog = true; render(); return; }
+    if (action === "cancel-exit") { state.dialog = false; render(); return; }
+    if (action === "confirm-exit") { state.dialog = false; state.exited = true; render(); return; }
+    if (action === "reenter") { state.exited = false; state.dialog = false; render(); return; }
+    if (action === "toggle-word") { toggleWord(i); return; }
+    if (action === "toggle-meaning") { toggleMeaning(i); return; }
+    if (action === "star") { toggleStar(i); return; }
+    if (action === "known") { markKnown(i); return; }
+    if (action === "hide-words") { toggleAllWords(); return; }
+    if (action === "hide-meanings") { toggleAllMeanings(); return; }
+    if (action === "next") { handleNext(); }
+  });
+
+  document.getElementById("switcher").addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-nav]");
+    if (!btn) return;
+    const keys = Object.keys(VARIANTS);
+    let index = keys.indexOf(state.variant);
+    index = btn.dataset.nav === "prev"
+      ? (index + keys.length - 1) % keys.length
+      : (index + 1) % keys.length;
+    setVariant(keys[index]);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || (document.activeElement && document.activeElement.isContentEditable)) return;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const keys = Object.keys(VARIANTS);
+    let index = keys.indexOf(state.variant);
+    index = event.key === "ArrowLeft"
+      ? (index + keys.length - 1) % keys.length
+      : (index + 1) % keys.length;
+    setVariant(keys[index]);
+  });
+
+  initGroup();
+  render();
+  renderSwitcher();
+</script>
+</body>
+</html>
