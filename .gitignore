@@ -45,3 +45,6 @@ app/android/app/src/main/assets/public/
 app/ios/App/App/public/
 app/ios/Pods/
 app/ios/App/Pods/
+
+# CI artifacts downloaded locally
+_artifacts/
