@@ -102,7 +102,7 @@ jobs:
             cp /opt/shorthand/releases/server.jar /opt/shorthand/releases/server.jar.prev 2>/dev/null || true
             rm -f /opt/shorthand/releases/server.jar
             cp server.jar /opt/shorthand/releases/server.jar
-            rsync -a --no-o --no-g --delete web/ /opt/shorthand/web/
+            rsync -a --no-o --no-g --omit-dir-times --delete web/ /opt/shorthand/web/
 
             sudo systemctl restart shorthand
 
