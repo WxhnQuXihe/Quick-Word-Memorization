@@ -8,4 +8,5 @@ public class HomeVo {
     private long favoriteCount;
     private long knownCount;
     private long learnedCount;
+    private Integer streakDays;
 }

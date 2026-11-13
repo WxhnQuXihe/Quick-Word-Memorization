@@ -2,11 +2,13 @@ package com.shortand.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.shortand.common.BizException;
+import com.shortand.domain.StudyGroup;
 import com.shortand.domain.UserWord;
 import com.shortand.domain.UserWordbook;
 import com.shortand.domain.Wordbook;
 import com.shortand.domain.vo.HomeVo;
 import com.shortand.domain.vo.WordbookVo;
+import com.shortand.mapper.StudyGroupMapper;
 import com.shortand.mapper.UserWordMapper;
 import com.shortand.mapper.UserWordbookMapper;
 import com.shortand.mapper.WordbookMapper;
@@ -14,6 +16,7 @@ import com.shortand.service.IWordbookService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +27,7 @@ public class WordbookServiceImpl implements IWordbookService {
     private final WordbookMapper wordbookMapper;
     private final UserWordbookMapper userWordbookMapper;
     private final UserWordMapper userWordMapper;
+    private final StudyGroupMapper studyGroupMapper;
 
     @Override
     public List<WordbookVo> listPublished(Long userId) {
@@ -90,6 +94,7 @@ public class WordbookServiceImpl implements IWordbookService {
         vo.setKnownCount(userWordMapper.selectCount(Wrappers.<UserWord>lambdaQuery()
                 .eq(UserWord::getUserId, userId)
                 .eq(UserWord::getIsKnown, 1)));
+        vo.setStreakDays(streakDays(userId));
         return vo;
     }
 
@@ -98,6 +103,27 @@ public class WordbookServiceImpl implements IWordbookService {
                 .eq(UserWordbook::getUserId, userId)
                 .eq(UserWordbook::getWordbookId, wordbookId)
                 .last("LIMIT 1"));
+    }
+
+    private int streakDays(Long userId) {
+        List<StudyGroup> groups = studyGroupMapper.selectList(Wrappers.<StudyGroup>lambdaQuery()
+                .eq(StudyGroup::getUserId, userId)
+                .eq(StudyGroup::getStatus, 1)
+                .isNotNull(StudyGroup::getFinishTime));
+        if (groups.isEmpty()) return 0;
+        var dates = groups.stream()
+                .map(g -> g.getFinishTime().toLocalDate())
+                .collect(java.util.stream.Collectors.toSet());
+        LocalDate day = LocalDate.now();
+        if (!dates.contains(day)) {
+            day = day.minusDays(1);
+        }
+        int streak = 0;
+        while (dates.contains(day)) {
+            streak++;
+            day = day.minusDays(1);
+        }
+        return streak;
     }
 
     private long learnedCount(Long userId, Long wordbookId) {
