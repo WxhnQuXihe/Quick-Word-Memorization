@@ -1,0 +1,93 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, e.g. v0.2.0'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - working-directory: app
+        run: npm ci && npm run build
+      - working-directory: app
+        run: npx cap sync android
+      - working-directory: app/android
+        run: chmod +x gradlew && ./gradlew --no-daemon assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - working-directory: app
+        run: npm ci && npm run build
+      - working-directory: app
+        run: npx cap sync ios
+      - working-directory: app/ios/App
+        run: pod install
+      - working-directory: app/ios/App
+        run: |
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - working-directory: app/ios/App
+        run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Debug-iphonesimulator/App.app shorthand-ios-sim.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-sim
+          path: app/ios/App/shorthand-ios-sim.zip
+          if-no-files-found: error
+
+  publish:
+    needs: [android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: Shorthand ${{ inputs.tag || github.ref_name }}
+          body: |
+            Shorthand 自动构建产物。
+
+            - Android：debug APK，可直接安装测试
+            - iOS：模拟器 .app 压缩包，不是 App Store 签名包
+          files: |
+            artifacts/android-apk/app-debug.apk
+            artifacts/ios-sim/shorthand-ios-sim.zip
