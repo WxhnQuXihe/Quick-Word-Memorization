@@ -31,12 +31,24 @@ jobs:
         run: npm ci && npm run build
       - working-directory: app
         run: npx cap sync android
-      - working-directory: app/android
-        run: chmod +x gradlew && ./gradlew --no-daemon assembleDebug
+      - name: Decode signing key
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+      - name: Build signed release APK
+        working-directory: app/android
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease \
+            -PversionCode=$(git rev-list --count HEAD) \
+            -PversionName=${GITHUB_REF_NAME#v}
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          path: app/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
 
   publish:
@@ -53,6 +65,6 @@ jobs:
           body: |
             Shorthand 自动构建产物。
 
-            - Android：debug APK，可直接安装测试
+            - Android：release 签名 APK，可直接覆盖安装
           files: |
-            artifacts/android-apk/app-debug.apk
+            artifacts/android-apk/app-release.apk

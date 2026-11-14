@@ -56,6 +56,10 @@ export function myFeedback(pageNo = 1, pageSize = 20): Promise<any> {
   return http.get('/feedback/mine', { params: { pageNo, pageSize } })
 }
 
+export function getAppVersion(): Promise<any> {
+  return http.get('/app/version')
+}
+
 export function getAnnouncements(): Promise<any[]> {
   return http.get('/announcements')
 }

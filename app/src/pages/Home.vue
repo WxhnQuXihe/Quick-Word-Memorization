@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
-import { getAnnouncements, getHome, listBooks, selectBook } from '../api/app'
+import { showConfirmDialog, showToast } from 'vant'
+import { getAnnouncements, getAppVersion, getHome, listBooks, selectBook } from '../api/app'
+import { APP_VERSION } from '../version'
 import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
@@ -44,7 +45,20 @@ function study() {
   router.push({ name: 'study', params: { bookId: b.id }, query: { name: b.name } })
 }
 
-onMounted(load)
+async function checkUpdate() {
+  const info = await getAppVersion()
+  if (info?.latestVersion && info.latestVersion !== APP_VERSION) {
+    showConfirmDialog({
+      title: '发现新版本',
+      message: `最新版本 ${info.latestVersion}\n${info.notes || ''}`,
+      confirmButtonText: '去下载',
+      cancelButtonText: '稍后'
+    }).then(() => {
+      window.open(info.downloadUrl, '_blank')
+    }).catch(() => {})
+  }
+}
+onMounted(async () => { await load(); checkUpdate() })
 </script>
 
 <template>

@@ -54,3 +54,12 @@ _artifacts/
 
 # Local OCR working files
 _ocr_pages/
+
+# Private local material
+docs/
+
+# Private local material
+prototype/
+
+# Private local material
+wordbooks/

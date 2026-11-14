@@ -18,6 +18,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/api/auth/login",
                         "/api/admin/auth/login",
+                        "/api/app/version",
                         "/actuator/**"
                 );
     }
