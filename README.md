@@ -49,7 +49,7 @@ cd app && npm install && npm run dev
 
 ## 发布
 
-打版本 tag 会自动构建 Android APK，并发布到 GitHub Release：
+每次用户端有可见更新，必须打版本 tag，自动构建 Android APK 并发布到 GitHub Release：
 
 ```bash
 git tag v0.2.1
