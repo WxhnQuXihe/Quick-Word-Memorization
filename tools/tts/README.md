@@ -64,3 +64,15 @@ python tools/tts/generate_kokoro_samples.py
 _artifacts/tts/kokoro/model.onnx
 _artifacts/tts/kokoro/af_heart.bin
 ```
+
+## 全量生成与导入
+
+```bash
+# 生成缺失/全量音频（支持断点）
+python tools/tts/generate_all.py --resume
+
+# 生成 word_audio 的 SQL upsert
+python tools/tts/import_audio_manifest.py
+```
+
+音频文件通过 tar 上传到服务器 `/opt/shorthand/audio`，Nginx 使用 `/audio/` 静态路由。

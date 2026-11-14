@@ -9,6 +9,7 @@ import com.shorthand.domain.StudyGroupWord;
 import com.shorthand.domain.UserWord;
 import com.shorthand.domain.UserWordbook;
 import com.shorthand.domain.Word;
+import com.shorthand.domain.WordAudio;
 import com.shorthand.domain.WordbookWord;
 import com.shorthand.domain.vo.GroupVo;
 import com.shorthand.domain.vo.SenseVo;
@@ -19,6 +20,7 @@ import com.shorthand.mapper.UserWordMapper;
 import com.shorthand.mapper.UserWordbookMapper;
 import com.shorthand.mapper.WordMapper;
 import com.shorthand.mapper.WordbookWordMapper;
+import com.shorthand.mapper.WordAudioMapper;
 import com.shorthand.service.IStudyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -49,6 +51,7 @@ public class StudyServiceImpl implements IStudyService {
     private final UserWordbookMapper userWordbookMapper;
     private final WordbookWordMapper wordbookWordMapper;
     private final WordMapper wordMapper;
+    private final WordAudioMapper wordAudioMapper;
     private final StudyGroupMapper studyGroupMapper;
     private final StudyGroupWordMapper studyGroupWordMapper;
     private final UserWordMapper userWordMapper;
@@ -129,7 +132,7 @@ public class StudyServiceImpl implements IStudyService {
         groupWord.setUpdateTime(LocalDateTime.now());
         studyGroupWordMapper.updateById(groupWord);
         touchSeen(userId, List.of(replacementId), group.getWordbookId());
-        return toWordVo(wordMapper.selectById(replacementId));
+        return toWordVo(wordMapper.selectById(replacementId), audioUrls(List.of(replacementId)).get(replacementId));
     }
 
     @Override
@@ -261,17 +264,19 @@ public class StudyServiceImpl implements IStudyService {
     }
 
     private List<Long> bookWordIds(Long wordbookId) {
-        return wordbookWordMapper.selectList(Wrappers.<WordbookWord>lambdaQuery()
+        return wordbookWordMapper.selectObjs(Wrappers.<WordbookWord>lambdaQuery()
+                        .select(WordbookWord::getWordId)
                         .eq(WordbookWord::getWordbookId, wordbookId)
                         .orderByAsc(WordbookWord::getSeq))
-                .stream().map(WordbookWord::getWordId).toList();
+                .stream().map(v -> ((Number) v).longValue()).toList();
     }
 
     private Set<Long> knownIds(Long userId) {
-        return userWordMapper.selectList(Wrappers.<UserWord>lambdaQuery()
+        return userWordMapper.selectObjs(Wrappers.<UserWord>lambdaQuery()
+                        .select(UserWord::getWordId)
                         .eq(UserWord::getUserId, userId)
                         .eq(UserWord::getIsKnown, 1))
-                .stream().map(UserWord::getWordId).collect(Collectors.toSet());
+                .stream().map(v -> ((Number) v).longValue()).collect(Collectors.toSet());
     }
 
     private Set<Long> usedIds(UserWordbook userBook) {
@@ -281,18 +286,18 @@ public class StudyServiceImpl implements IStudyService {
                 .eq(StudyGroup::getRoundNo, userBook.getCurrentRoundNo()));
         if (groups.isEmpty()) return Set.of();
         List<Long> groupIds = groups.stream().map(StudyGroup::getId).toList();
-        return studyGroupWordMapper.selectList(Wrappers.<StudyGroupWord>lambdaQuery()
+        return studyGroupWordMapper.selectObjs(Wrappers.<StudyGroupWord>lambdaQuery()
+                        .select(StudyGroupWord::getWordId)
                         .in(StudyGroupWord::getGroupId, groupIds))
-                .stream().map(StudyGroupWord::getWordId)
-                .filter(Objects::nonNull)
+                .stream().filter(Objects::nonNull).map(v -> ((Number) v).longValue())
                 .collect(Collectors.toSet());
     }
 
     private Set<Long> currentGroupIds(Long groupId) {
-        return studyGroupWordMapper.selectList(Wrappers.<StudyGroupWord>lambdaQuery()
+        return studyGroupWordMapper.selectObjs(Wrappers.<StudyGroupWord>lambdaQuery()
+                        .select(StudyGroupWord::getWordId)
                         .eq(StudyGroupWord::getGroupId, groupId))
-                .stream().map(StudyGroupWord::getWordId)
-                .filter(Objects::nonNull)
+                .stream().filter(Objects::nonNull).map(v -> ((Number) v).longValue())
                 .collect(Collectors.toSet());
     }
 
@@ -373,10 +378,11 @@ public class StudyServiceImpl implements IStudyService {
                 .filter(Objects::nonNull).toList();
         Map<Long, Word> words = ids.isEmpty() ? Map.of() : wordMapper.selectBatchIds(ids).stream()
                 .collect(Collectors.toMap(Word::getId, Function.identity()));
+        Map<Long, String> audio = audioUrls(ids);
         List<WordVo> vos = new ArrayList<>();
         for (StudyGroupWord row : rows) {
             if (row.getWordId() != null && words.containsKey(row.getWordId())) {
-                vos.add(toWordVo(words.get(row.getWordId())));
+                vos.add(toWordVo(words.get(row.getWordId()), audio.get(row.getWordId())));
             }
         }
         GroupVo vo = new GroupVo();
@@ -394,11 +400,27 @@ public class StudyServiceImpl implements IStudyService {
         List<Long> ids = rows.stream().map(UserWord::getWordId).toList();
         Map<Long, Word> words = wordMapper.selectBatchIds(ids).stream()
                 .collect(Collectors.toMap(Word::getId, Function.identity()));
-        return rows.stream().map(row -> toWordVo(words.get(row.getWordId())))
+        Map<Long, String> audio = audioUrls(ids);
+        return rows.stream().map(row -> toWordVo(words.get(row.getWordId()), audio.get(row.getWordId())))
                 .filter(Objects::nonNull).toList();
     }
 
+    private Map<Long, String> audioUrls(List<Long> ids) {
+        if (ids.isEmpty()) return Map.of();
+        return wordAudioMapper.selectList(Wrappers.<WordAudio>lambdaQuery()
+                        .in(WordAudio::getWordId, ids)
+                        .eq(WordAudio::getStatus, 2)
+                        .eq(WordAudio::getAccent, "us")
+                        .eq(WordAudio::getVoice, "af_heart"))
+                .stream().collect(Collectors.toMap(WordAudio::getWordId,
+                        a -> "/audio/" + a.getObjectKey(), (a, b) -> a));
+    }
+
     private WordVo toWordVo(Word word) {
+        return toWordVo(word, null);
+    }
+
+    private WordVo toWordVo(Word word, String audioUrl) {
         if (word == null) return null;
         WordVo vo = new WordVo();
         vo.setId(word.getId());
@@ -428,6 +450,7 @@ public class StudyServiceImpl implements IStudyService {
             senses.add(sense);
         }
         vo.setSenses(senses);
+        vo.setAudioUrl(audioUrl);
         return vo;
     }
 }

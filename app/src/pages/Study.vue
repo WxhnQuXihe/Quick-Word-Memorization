@@ -15,10 +15,28 @@ const loading = ref(true)
 const nextArmed = ref(false)
 const showExit = ref(false)
 let nextTimer: number | undefined
+let currentAudio: HTMLAudioElement | null = null
+const preloaded = new Map<string, HTMLAudioElement>()
 
 const allWordsHidden = computed(() => cards.value.length > 0 && cards.value.every((c) => c.wordHidden))
 const allMeaningsHidden = computed(() => cards.value.length > 0 && cards.value.every((c) => c.meaningHidden))
 const percent = computed(() => group.value ? Math.min(100, Math.round((group.value.groupNo / 443) * 100)) : 0)
+
+function preload(words: any[]) {
+  for (const word of words) {
+    if (!word.audioUrl || preloaded.has(word.audioUrl)) continue
+    const audio = new Audio(word.audioUrl)
+    audio.preload = 'auto'
+    preloaded.set(word.audioUrl, audio)
+  }
+}
+
+function playAudio(card: any) {
+  if (!card.audioUrl) return
+  if (currentAudio) currentAudio.pause()
+  currentAudio = new Audio(card.audioUrl)
+  currentAudio.play().catch(() => {})
+}
 
 function decorate(word: any) {
   return {
@@ -36,6 +54,7 @@ async function load() {
   try {
     group.value = await currentGroup(bookId)
     cards.value = (group.value.words || []).map(decorate)
+    preload(cards.value)
   } finally {
     loading.value = false
   }
@@ -83,6 +102,7 @@ async function handleNext() {
   const res = await nextGroup(group.value.groupId)
   group.value = res
   cards.value = (res.words || []).map(decorate)
+  preload(cards.value)
   if (!res.finished) showToast(`第 ${res.groupNo} 组`)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -124,7 +144,12 @@ onMounted(load)
         </div>
         <div class="word-zone" @click="card.wordHidden = !card.wordHidden">
           <template v-if="!card.wordHidden">
-            <div class="word serif">{{ card.word }}</div>
+            <div class="word-line">
+              <div class="word serif">{{ card.word }}</div>
+              <button v-if="card.audioUrl" class="speaker" aria-label="播放读音" @click.stop="playAudio(card)">
+                <van-icon name="volume-o" :size="18" />
+              </button>
+            </div>
             <div class="phonetic">{{ card.phoneticUk || card.phoneticUs }}</div>
           </template>
           <div v-else class="hidden-slot">点击显示单词</div>
@@ -176,6 +201,8 @@ onMounted(load)
 .actions button { border: 0; background: transparent; color: var(--muted); font-size: 11px; padding: 5px 7px; border-radius: 999px; }
 .actions button.on { color: var(--star); background: rgba(201, 138, 46, .1); }
 .word-zone, .meaning-zone { cursor: pointer; }
+.word-line { display: flex; align-items: center; gap: 8px; }
+.speaker { border: 1px solid rgba(180, 67, 47, .2); background: rgba(180, 67, 47, .06); color: var(--accent); width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex: none; }
 .word { font-size: 32px; line-height: 1.08; letter-spacing: -.02em; font-weight: 500; margin: 2px 0 4px; }
 .phonetic { font-size: 12px; color: var(--muted); }
 .rule { height: 1px; background: var(--line); margin: 14px 0 10px; }

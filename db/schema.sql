@@ -232,3 +232,23 @@ CREATE TABLE IF NOT EXISTS `announcement` (
   PRIMARY KEY (`id`),
   KEY `idx_status_publish` (`status`, `publish_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='公告';
+
+-- 13. 单词音频
+CREATE TABLE IF NOT EXISTS `word_audio` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `word_id` BIGINT UNSIGNED NOT NULL,
+  `accent` VARCHAR(8) NOT NULL DEFAULT 'us',
+  `voice` VARCHAR(64) NOT NULL,
+  `object_key` VARCHAR(255) NOT NULL,
+  `checksum` CHAR(64) NOT NULL,
+  `duration_ms` INT DEFAULT NULL,
+  `size_bytes` INT DEFAULT NULL,
+  `model` VARCHAR(64) NOT NULL,
+  `model_version` VARCHAR(32) NOT NULL,
+  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0缺失 1生成中 2完成 3失败',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_word_accent_voice` (`word_id`, `accent`, `voice`),
+  KEY `idx_checksum` (`checksum`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='单词音频';

@@ -24,9 +24,10 @@ const percent = computed(() => {
 async function load() {
   loading.value = true
   try {
-    home.value = await getHome()
-    books.value = await listBooks()
-    announcements.value = await getAnnouncements()
+    const [h, b, a] = await Promise.all([getHome(), listBooks(), getAnnouncements()])
+    home.value = h
+    books.value = b
+    announcements.value = a
   } finally {
     loading.value = false
   }

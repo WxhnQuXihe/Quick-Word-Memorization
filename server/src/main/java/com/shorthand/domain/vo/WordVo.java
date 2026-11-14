@@ -11,4 +11,5 @@ public class WordVo {
     private String phoneticUk;
     private String phoneticUs;
     private List<SenseVo> senses;
+    private String audioUrl;
 }
