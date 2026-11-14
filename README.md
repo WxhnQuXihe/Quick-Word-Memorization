@@ -5,6 +5,7 @@
 不开放注册，不设每日目标，不排复习队列 —— 只做一件事：把一本词书按轮次刷完。
 
 > 项目名 `Shorthand`，App 显示名「神也背单词」。仓库为 monorepo，用户端、管理后台、服务端共用一套 REST API。
+> 当前版本：**v0.5.1**（Android 签名包；包含单词朗读和版本更新提示）。
 > 本文按当前代码写成，不是方案文档的转述；两者冲突时以代码为准。
 
 ## 目录
@@ -33,16 +34,16 @@
 
 - **使用者**：作者本人与少数朋友。账号由管理后台创建，没有注册入口。
 - **形态**：主力是安卓 App（Capacitor 打包的 Vue 3 页面），另有一套只给管理员用的 Web 后台。
-- **取舍**：刻意不做「科学背单词」那套机制 —— 没有遗忘曲线、没有每日目标、没有复习队列、没有发音朗读。产品契约只有一条：**一轮过完，就是过完了**。熟词不再出现，剩下的词随机分组反复刷。
+- **取舍**：刻意不做「科学背单词」那套机制 —— 没有遗忘曲线、没有每日目标、没有复习队列。已接入**预生成单词朗读**（Kokoro），不做实时 TTS、跟读评分和例句朗读。产品契约只有一条：**一轮过完，就是过完了**。熟词不再出现，剩下的词随机分组反复刷。
 - **规模假设**：单实例、单管理员、单本词书最大约 5500 词。所有复杂选词都在 JVM 内存里算，不依赖缓存与队列。
 
 ## 2. 功能范围
 
 | 端 | 已实现 |
 |---|---|
-| 用户端（App / 移动端 Web） | 登录；词书选择与进度；10 词一组背单词；标熟即时换词；收藏；收藏夹（可再背）；熟词本（只读 + 移出）；主页概览与连续学习天数；公告；意见反馈与回复查看；版本更新提示 |
+| 用户端（App / 移动端 Web） | 登录；词书选择与进度；10 词一组背单词；标熟即时换词；收藏；收藏夹（可再背）；熟词本（只读 + 移出）；主页概览与连续学习天数；公告；意见反馈与回复查看；单词朗读；版本更新提示 |
 | 管理后台 | 总览看板（KPI、词书表、近 14 天活跃度、最近用户、最近导入、JVM 与运行时长）；词书增删改与上下架；词条增删改查；Excel 批量导入与导入记录；用户建号、重置密码、删除（级联清理学习记录）；反馈查看与回复；公告发布 |
-| 明确不做 | 注册、支付、社区、TTS 与跟读评分、遗忘曲线、每日目标、复习队列、多管理员、多租户、iOS 维护（工程保留） |
+| 明确不做 | 注册、支付、社区、实时 TTS / 跟读评分、遗忘曲线、每日目标、复习队列、多管理员、多租户、iOS 维护（工程保留） |
 
 ## 3. 技术栈
 
@@ -53,6 +54,7 @@
 | 管理后台 | Vue 3.5 + Vite + TypeScript + Element Plus 2.9 |
 | 服务端 | Spring Boot 3.2.12 / Java 17，MyBatis-Plus 3.5.7，EasyExcel，Lombok |
 | 数据库 | MySQL 8（库名 `shorthand`，`utf8mb4_unicode_ci`） |
+| 单词音频 | Kokoro-82M ONNX 离线生成 MP3，Nginx 静态分发 |
 | 鉴权 | 自研 HMAC 无状态 token（见 §8.3），未引入 Sa-Token / Spring Security |
 | 网关 | 反向代理（Nginx）承接静态站点与 `/api` 转发 |
 | CI/CD | GitHub Actions（自动部署 + Android 签名包发布） |
@@ -69,13 +71,13 @@
 │     ├─ config/            MybatisPlusConfig / WebConfig / AuthInterceptor / TokenStore
 │     ├─ controller/        用户端接口 + admin/ 子包（管理端接口）
 │     ├─ domain/            实体 + bo/（入参）+ vo/（出参）
-│     ├─ mapper/            12 个 Mapper，全部 extends BaseMapper<T>
+│     ├─ mapper/            13 个 Mapper，全部 extends BaseMapper<T>
 │     ├─ service/ impl/     业务实现（StudyServiceImpl 承载核心学习模型）
 │     └─ listener/          WordImportListener（EasyExcel 读表）
 ├─ app/                     Vue 3 用户端（Capacitor 壳 + android/ ios/ 原生工程）
 ├─ admin/                   Vue 3 管理后台（base 为 /admin/）
-├─ db/schema.sql            首次建库脚本（12 张表，执行一次即弃）
-├─ tools/                   词书转换、音标校对、冒烟测试、版本发布脚本
+├─ db/schema.sql            首次建库脚本（13 张表，执行一次即弃）
+├─ tools/                   词书转换、Kokoro 音频生成、音标校对、冒烟测试、版本发布脚本
 ├─ assets/                  App 图标与启动页
 ├─ .github/workflows/       deploy.yml / release.yml / android.yml
 └─ AGENTS.md                面向编码 Agent 的仓库说明
@@ -95,6 +97,7 @@
                │  反向代理        │   /        → 用户端构建产物（单页）
                │                 │   /admin/  → 管理后台构建产物（单页）
                │                 │   /uploads → 上传文件目录
+               │                 │   /audio   → 单词 MP3 静态目录（Nginx alias）
                └────────┬────────┘
                         │  /api/ 转发
                ┌────────▼────────┐
@@ -163,7 +166,7 @@
 
 ## 7. 数据模型
 
-`db/schema.sql` 共 12 张表，全部 `utf8mb4_unicode_ci`。
+`db/schema.sql` 共 13 张表，全部 `utf8mb4_unicode_ci`。
 
 | 表 | 作用 | 关键字段 |
 |---|---|---|
@@ -179,8 +182,9 @@
 | `feedback` | 意见反馈 | user_id / content / contact / status / reply / reply_time |
 | `import_log` | Excel 导入记录 | wordbook_id / file_name / total_rows / success_rows / fail_rows / status / error_file |
 | `announcement` | 公告 | title / content / status / publish_time |
+| `word_audio` | 单词音频索引 | word_id / accent / voice / object_key / checksum / model_version / status |
 
-关系链路：`wordbook —< wordbook_word >— word`；用户通过 `user_wordbook` 选书，`study_group —< study_group_word` 记录每组出过哪些词；`user_word` 是「用户 × 词」的唯一状态表，收藏夹与熟词本都是它的视图，不单独建表。
+关系链路：`wordbook —< wordbook_word >— word`；用户通过 `user_wordbook` 选书，`study_group —< study_group_word` 记录每组出过哪些词；`user_word` 是「用户 × 词」的唯一状态表，收藏夹与熟词本都是它的视图，不单独建表。`word_audio` 按 `word_id + accent + voice` 索引音频文件，音频文件本身存服务器磁盘，不存 BLOB。
 
 **几个刻意的取舍：**
 
@@ -243,6 +247,7 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 | GET | `/api/announcements` | 公告 |
 | POST · GET | `/api/feedback` · `/api/feedback/mine` | 提交反馈 / 我的反馈与回复 |
 | GET | `/api/app/version` | 最新版本号、下载地址、更新说明 |
+| — | 学习组响应 | `words[].audioUrl` 为预生成 MP3 地址；没有音频时为空 |
 | GET | `/actuator/health` | 健康检查（部署脚本据此判断存活） |
 
 管理端（`Authorization` 为管理员 token，全部在 `/api/admin` 下）：
@@ -277,6 +282,7 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 - 底部保留**全局按钮**「隐藏单词 / 隐藏释义」，一键批量切换；之后仍可单卡点开某一张，单卡状态与全局按钮互不覆盖。
 - 熟词、收藏按钮 `stopPropagation`，避免误触隐藏。
 - 「下一组」两段式确认；退出时弹「要耍起了吗？」。
+- 每个单词右侧有朗读按钮；加载一组后异步预加载 10 条 MP3，音频缺失时隐藏按钮。
 
 状态管理只用一个 `stores/auth.ts`（token 存 `localStorage.app_token`），其余都是页面内状态。主题通过 `styles/tokens.css` 的 Design Token 统一（纸感编辑：暖白 `#f5f1e8` / 墨黑 `#1a1713` / 朱砂 `#b4432f`）。
 
@@ -334,7 +340,7 @@ CI/CD 是三条 GitHub Actions：
 用户端有可见改动就要发版 —— 版本号是用户能感知的东西（`app/src/version.ts` 的 `APP_VERSION`，与后端 `APP_LATEST_VERSION` 对齐，用于更新提示）。
 
 ```bash
-tools/release.sh v0.4.1        # 打 tag 并推送
+tools/release.sh v0.5.1        # 打 tag 并推送
 ```
 
 tag 推送触发 `.github/workflows/release.yml`：`npm run build` → `cap sync android` → 用 secrets 里的 keystore 签名 → `assembleRelease` → 上传 GitHub Release（APK 可直接覆盖安装）。
@@ -360,7 +366,7 @@ tag 推送触发 `.github/workflows/release.yml`：`npm run build` → `cap sync
 4. **事务只在 service 层**：`@Transactional` 不出现在 controller / mapper。
 5. **入参出参分离**：controller 收 `bo/`（带 `@Valid`），返回 `vo/`，实体不出接口层。
 6. **改规则要同步改文档**：动了学习模型就顺手改本文件 §6。
-7. **不做清单**：注册、支付、社区、TTS、遗忘曲线、每日目标、复习队列 —— 想加先讨论产品定位，别直接写。
+7. **不做清单**：注册、支付、社区、实时 TTS / 跟读评分、遗忘曲线、每日目标、复习队列 —— 想加先讨论产品定位，别直接写。单词朗读是预生成音频，不属于实时 TTS。
 
 ## 16. 已知限制
 
@@ -371,6 +377,7 @@ tag 推送触发 `.github/workflows/release.yml`：`npm run build` → `cap sync
 - **无 API 文档页**：接口以本文档 §9 与 controller 为准。
 - **iOS 未维护**：`app/ios` 工程还在，但没有构建与发布链路。
 - **词书需自备**：仓库不含任何词表数据，空库启动只有登录页。
+- **音频需维护**：新增单词后要补跑 `tools/tts/generate_all.py --resume`，否则新词没有朗读按钮；当前已生成 6,073 条 MP3。
 
 ## 17. 许可
 
