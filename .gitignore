@@ -63,3 +63,6 @@ prototype/
 
 # Private local material
 wordbooks/
+
+# Private deployment material (server paths / host)
+deploy/

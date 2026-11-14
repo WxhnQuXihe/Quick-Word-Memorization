@@ -1,4 +1,0 @@
-# /etc/cron.d/shorthand-backup
-SHELL=/bin/bash
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-15 3 * * * shortand bash -c 'set -a; . /opt/shorthand/.env; set +a; /opt/shorthand/bin/backup.sh' >> /opt/shorthand/logs/backup.log 2>&1
