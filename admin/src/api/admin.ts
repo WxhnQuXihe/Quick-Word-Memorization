@@ -68,6 +68,7 @@ export function importWordbook(wordbookId: number, file: File): Promise<any> {
   form.append('file', file)
   return http.post('/admin/import/wordbook', form, {
     params: { wordbookId },
+    timeout: 300000,
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
