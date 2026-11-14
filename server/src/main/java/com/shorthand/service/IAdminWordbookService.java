@@ -13,4 +13,6 @@ public interface IAdminWordbookService {
     WordbookVo update(Long id, WordbookSaveBo bo);
 
     void updateStatus(Long id, Integer status);
+
+    void clearWords(Long id);
 }

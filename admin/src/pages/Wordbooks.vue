@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { createWordbook, listWordbooks, updateWordbook, updateWordbookStatus } from '../api/admin'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { clearWordbookWords, createWordbook, listWordbooks, updateWordbook, updateWordbookStatus } from '../api/admin'
 
 const rows = ref<any[]>([])
 const loading = ref(false)
@@ -51,6 +51,17 @@ async function toggle(row: any) {
   await load()
 }
 
+async function clear(row: any) {
+  await ElMessageBox.confirm(
+    `清空「${row.name}」后，这本书里的 ${row.wordCount || 0} 个单词关联会全部删除；单词本身若被其他词书使用不会删除。`,
+    '确认清空词书',
+    { type: 'warning', confirmButtonText: '确认清空', cancelButtonText: '取消' }
+  )
+  await clearWordbookWords(row.id)
+  ElMessage.success('词书已清空，可以重新导入 V2')
+  await load()
+}
+
 onMounted(load)
 </script>
 
@@ -73,6 +84,7 @@ onMounted(load)
             <td class="right">
               <el-button link @click="openEdit(b)">编辑</el-button>
               <el-button link @click="toggle(b)">{{ b.status === 1 ? '下架' : '上架' }}</el-button>
+              <el-button link type="danger" @click="clear(b)">清空单词</el-button>
             </td>
           </tr>
           <tr v-if="!rows.length"><td colspan="6" class="empty">还没有词书，点右上角新建。</td></tr>

@@ -92,3 +92,7 @@ export function changeAdminPassword(oldPassword: string, newPassword: string): P
 export function deleteUser(id: number): Promise<void> {
   return http.delete(`/admin/users/${id}`)
 }
+
+export function clearWordbookWords(id: number): Promise<void> {
+  return http.delete(`/admin/wordbooks/${id}/words`)
+}

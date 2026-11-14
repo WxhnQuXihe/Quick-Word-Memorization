@@ -11,6 +11,7 @@ import com.shorthand.mapper.WordbookWordMapper;
 import com.shorthand.service.IAdminWordbookService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -62,6 +63,17 @@ public class AdminWordbookServiceImpl implements IAdminWordbookService {
                     .eq(WordbookWord::getWordbookId, id));
             book.setWordCount(count == null ? 0 : count.intValue());
         }
+        wordbookMapper.updateById(book);
+    }
+
+    @Override
+    @Transactional
+    public void clearWords(Long id) {
+        Wordbook book = wordbookMapper.selectById(id);
+        if (book == null) throw new BizException("词书不存在");
+        wordbookWordMapper.delete(Wrappers.<WordbookWord>lambdaQuery()
+                .eq(WordbookWord::getWordbookId, id));
+        book.setWordCount(0);
         wordbookMapper.updateById(book);
     }
 

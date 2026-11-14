@@ -5,6 +5,7 @@ import com.shorthand.domain.bo.WordbookSaveBo;
 import com.shorthand.service.IAdminWordbookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,6 +39,12 @@ public class AdminWordbookController {
     @PostMapping("/{id}/status")
     public Result status(@PathVariable Long id, @RequestParam Integer status) {
         adminWordbookService.updateStatus(id, status);
+        return Result.ok();
+    }
+
+    @DeleteMapping("/{id}/words")
+    public Result clearWords(@PathVariable Long id) {
+        adminWordbookService.clearWords(id);
         return Result.ok();
     }
 }
