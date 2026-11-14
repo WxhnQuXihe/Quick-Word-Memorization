@@ -3,30 +3,28 @@ import { onMounted, ref } from 'vue'
 import { getDashboard } from '../api/admin'
 
 const stats = ref<any>(null)
-const events = [
-  ['14:32', 'IMPORT', '六级大纲 · 5,515 条词条已入库'],
-  ['14:18', 'SYSTEM', 'TTS 未启用，跳过音频任务'],
-  ['13:52', 'USER', 'QX 完成第 3 组 · 四级大纲'],
-  ['12:06', 'FEEDBACK', '#12 已回复 · 用户反馈'],
-  ['09:41', 'AUTH', 'admin 登录 · 47.95.66.191']
-]
-const bars = [18, 26, 22, 34, 30, 46, 38, 52, 44, 61, 55, 68, 62, 74]
 const fmt = (n: number | undefined) => (n ?? 0).toLocaleString()
+const uptime = (sec: number | undefined) => {
+  const d = Math.floor((sec || 0) / 86400)
+  const h = Math.floor(((sec || 0) % 86400) / 3600)
+  return d > 0 ? `${d}d ${String(h).padStart(2, '0')}h` : `${h}h`
+}
+const importStatus = (s: number) => s === 1 ? '成功' : s === 2 ? '部分失败' : '失败'
 onMounted(async () => { stats.value = await getDashboard() })
 </script>
 
 <template>
   <div class="dash">
     <section class="kpis">
-      <div class="kpi"><div class="label">词条总量</div><div class="value">{{ fmt(stats?.wordCount) }}</div><div class="delta"><b>{{ stats?.bookCount || 0 }}</b> 本词书</div><div class="spark a"></div></div>
-      <div class="kpi"><div class="label">注册用户</div><div class="value">{{ fmt(stats?.userCount) }}</div><div class="delta"><b>不开放注册</b></div><div class="spark b"></div></div>
-      <div class="kpi"><div class="label">收藏总数</div><div class="value">{{ fmt(stats?.favoriteCount) }}</div><div class="delta"><b>{{ fmt(stats?.knownCount) }}</b> 个熟词</div><div class="spark a"></div></div>
-      <div class="kpi"><div class="label">待处理反馈</div><div class="value">{{ fmt(stats?.openFeedbackCount) }}</div><div class="delta"><b>需回复</b></div><div class="spark c"></div></div>
+      <div class="kpi"><div class="label">词条总量</div><div class="value">{{ fmt(stats?.wordCount) }}</div><div class="delta"><b>{{ stats?.bookCount || 0 }}</b> 本词书</div></div>
+      <div class="kpi"><div class="label">注册用户</div><div class="value">{{ fmt(stats?.userCount) }}</div><div class="delta"><b>不开放注册</b></div></div>
+      <div class="kpi"><div class="label">收藏总数</div><div class="value">{{ fmt(stats?.favoriteCount) }}</div><div class="delta"><b>{{ fmt(stats?.knownCount) }}</b> 个熟词</div></div>
+      <div class="kpi"><div class="label">待处理反馈</div><div class="value">{{ fmt(stats?.openFeedbackCount) }}</div><div class="delta"><b>需回复</b></div></div>
     </section>
 
     <section class="grid">
       <div class="panel books">
-        <div class="panel-head"><h2>词书运行状态</h2><span>3 BOOKS / LIVE</span></div>
+        <div class="panel-head"><h2>词书运行状态</h2><span>{{ stats?.bookCount || 0 }} BOOKS / LIVE</span></div>
         <table>
           <thead><tr><th>词书</th><th>词数</th><th>状态</th><th>排序</th><th>最近更新</th></tr></thead>
           <tbody>
@@ -46,18 +44,21 @@ onMounted(async () => { stats.value = await getDashboard() })
         <div class="panel">
           <div class="panel-head"><h2>系统遥测</h2><span>REALTIME</span></div>
           <div class="telemetry">
-            <div><span>API LATENCY</span><b>42 ms</b></div>
-            <div><span>DB QUERY</span><b>12 ms</b></div>
-            <div><span>JVM HEAP</span><b>312 MB</b></div>
-            <div><span>UPTIME</span><b>12d 04h</b></div>
+            <div><span>API LATENCY</span><b>—</b></div>
+            <div><span>DB QUERY</span><b>—</b></div>
+            <div><span>JVM HEAP</span><b>{{ stats ? `${stats.jvmUsedMb || 0}/${stats.jvmMaxMb || 0} MB` : '—' }}</b></div>
+            <div><span>UPTIME</span><b>{{ stats ? uptime(stats.uptimeSeconds) : '—' }}</b></div>
           </div>
         </div>
         <div class="panel">
-          <div class="panel-head"><h2>事件流</h2><span>LAST 5</span></div>
+          <div class="panel-head"><h2>最近导入</h2><span>LAST 5</span></div>
           <div class="log">
-            <div v-for="e in events" :key="e[0] + e[2]" class="log-row">
-              <span class="mono time">{{ e[0] }}</span><span class="mono kind" :class="{ sys: e[1] === 'SYSTEM' }">{{ e[1] }}</span><span class="msg">{{ e[2] }}</span>
+            <div v-for="e in (stats?.recentImports || [])" :key="e.id" class="log-row">
+              <span class="mono time">{{ (e.createTime || '').replace('T', ' ').slice(11, 16) }}</span>
+              <span class="mono kind">{{ importStatus(e.status) }}</span>
+              <span class="msg">{{ e.fileName || '-' }} · {{ e.successRows || 0 }}/{{ e.successRows + e.failRows || 0 }}</span>
             </div>
+            <div v-if="!stats?.recentImports?.length" class="mono" style="padding:8px 0">暂无导入记录</div>
           </div>
         </div>
       </div>
@@ -67,7 +68,7 @@ onMounted(async () => { stats.value = await getDashboard() })
       <div class="panel">
         <div class="panel-head"><h2>学习活跃度</h2><span>14 DAYS / WORDS</span></div>
         <div class="bars">
-          <div v-for="(v, i) in bars" :key="i" class="bar-col" :style="{ height: v + '%' }"><span>{{ i + 1 }}</span></div>
+          <div v-for="(v, i) in (stats?.activity || [])" :key="i" class="bar-col" :style="{ height: Math.max(4, Math.min(100, v * 12)) + '%' }"><span>{{ i + 1 }}</span></div>
         </div>
       </div>
       <div class="panel">

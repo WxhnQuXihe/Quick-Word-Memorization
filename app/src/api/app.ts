@@ -55,3 +55,7 @@ export function submitFeedback(content: string, contact = ''): Promise<void> {
 export function myFeedback(pageNo = 1, pageSize = 20): Promise<any> {
   return http.get('/feedback/mine', { params: { pageNo, pageSize } })
 }
+
+export function getAnnouncements(): Promise<any[]> {
+  return http.get('/announcements')
+}

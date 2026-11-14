@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Grid, Collection, Document, Upload, User, ChatDotRound } from '@element-plus/icons-vue'
+import { Grid, Collection, Document, Upload, User, ChatDotRound, Bell } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { changeAdminPassword } from '../api/admin'
 import { useAuthStore } from '../stores/auth'
@@ -16,6 +16,7 @@ const saving = ref(false)
 
 const menus = [
   { name: 'dashboard', label: '总览', icon: Grid, path: '/' },
+  { name: 'announcements', label: '公告', icon: Bell, path: '/announcements' },
   { name: 'wordbooks', label: '词书', icon: Collection, path: '/wordbooks' },
   { name: 'words', label: '词条', icon: Document, path: '/words' },
   { name: 'imports', label: '导入', icon: Upload, path: '/imports' },
@@ -73,7 +74,7 @@ async function savePassword() {
           <div class="eyebrow">SHORTHAND / CONTROL</div>
           <h1>{{ title }}</h1>
         </div>
-        <div class="status"><span class="dot"></span> ALL SYSTEMS NOMINAL</div>
+        <div class="status"><span class="dot"></span> ADMIN CONSOLE</div>
         <el-dropdown trigger="click">
           <span class="avatar">{{ auth.name.slice(0, 2).toUpperCase() }}</span>
           <template #dropdown>

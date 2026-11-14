@@ -58,7 +58,7 @@ async function clear(row: any) {
     { type: 'warning', confirmButtonText: '确认清空', cancelButtonText: '取消' }
   )
   await clearWordbookWords(row.id)
-  ElMessage.success('词书已清空，可以重新导入 V2')
+  ElMessage.success('清空成功')
   await load()
 }
 

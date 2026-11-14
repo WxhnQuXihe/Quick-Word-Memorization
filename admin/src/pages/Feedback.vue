@@ -41,9 +41,10 @@ onMounted(load)
     <div class="panel" v-loading="loading">
       <div class="head"><h2>用户反馈</h2><span>{{ rows.filter(r => r.status === 0).length }} OPEN</span></div>
       <div v-for="r in rows" :key="r.id" class="row">
-        <div class="avatar">{{ (r.userId || '?').toString().slice(0, 1) }}</div>
+        <div class="avatar">{{ (r.nickname || r.username || '?').slice(0, 1) }}</div>
         <div class="body">
-          <b>用户 #{{ r.userId || '-' }}</b>
+          <b>{{ r.nickname || r.username || ('用户 #' + r.userId) }}</b>
+          <span class="uid">@{{ r.username || r.userId }}</span>
           <p>{{ r.content }}</p>
           <span>{{ (r.createTime || '').replace('T', ' ').slice(0, 16) }} · {{ r.status === 1 ? '已回复' : '待处理' }}</span>
           <div v-if="r.reply" class="reply">回复：{{ r.reply }}</div>
@@ -72,6 +73,7 @@ onMounted(load)
 .avatar { width: 30px; height: 30px; border-radius: 50%; background: #1a2027; border: 1px solid #2a333d; display: grid; place-items: center; font-size: 10px; color: var(--accent); }
 .body { flex: 1; }
 .body b { font-size: 11px; font-weight: 500; }
+.uid { display: inline-block; margin-left: 6px; font-family: var(--mono); font-size: 9px; color: var(--muted); }
 .body p { margin: 5px 0; font-size: 12px; color: #b9c2cc; }
 .body span { font-family: var(--mono); font-size: 9px; color: var(--muted); }
 .reply { margin-top: 7px; font-size: 11px; color: var(--accent); }

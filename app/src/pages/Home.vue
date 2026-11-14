@@ -2,13 +2,14 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import { getHome, listBooks, selectBook } from '../api/app'
+import { getAnnouncements, getHome, listBooks, selectBook } from '../api/app'
 
 const router = useRouter()
 const home = ref<any>(null)
 const books = ref<any[]>([])
 const showBooks = ref(false)
 const loading = ref(true)
+const announcements = ref<any[]>([])
 
 const percent = computed(() => {
   const b = home.value?.currentBook
@@ -21,6 +22,7 @@ async function load() {
   try {
     home.value = await getHome()
     books.value = await listBooks()
+    announcements.value = await getAnnouncements()
   } finally {
     loading.value = false
   }
@@ -77,6 +79,13 @@ onMounted(load)
         <button class="mini" @click="router.push('/favorites')"><span>收藏夹</span><b>{{ home.favoriteCount }}</b></button>
         <button class="mini" @click="router.push('/known')"><span>熟词本</span><b>{{ home.knownCount }}</b></button>
       </section>
+
+      <section v-if="announcements.length" class="notice">
+        <div class="notice-label">公告</div>
+        <h3 class="serif">{{ announcements[0].title }}</h3>
+        <p>{{ announcements[0].content }}</p>
+        <span>{{ (announcements[0].publishTime || announcements[0].createTime || '').replace('T', ' ').slice(0, 16) }}</span>
+      </section>
     </template>
 
     <section v-else class="card empty-card">
@@ -123,6 +132,11 @@ onMounted(load)
 .mini { border: 1px solid var(--line); background: var(--surface); border-radius: 16px; padding: 16px; text-align: left; display: flex; flex-direction: column; gap: 6px; }
 .mini span { font-size: 11px; color: var(--muted); }
 .mini b { font-size: 22px; font-weight: 500; }
+.notice { margin-top: 12px; padding: 18px 20px; background: rgba(180, 67, 47, .05); border: 1px solid rgba(180, 67, 47, .18); border-radius: 18px; }
+.notice-label { font-size: 10px; color: var(--accent); letter-spacing: .16em; margin-bottom: 7px; }
+.notice h3 { font-size: 19px; font-weight: 500; margin: 0 0 5px; }
+.notice p { font-size: 12px; line-height: 1.7; color: var(--muted); margin: 0; white-space: pre-wrap; }
+.notice span { display: block; margin-top: 9px; font-size: 9px; color: #a1988a; }
 .empty-card { text-align: center; padding: 38px 24px; }
 .empty-mark { width: 52px; height: 52px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; margin: 0 auto 14px; color: var(--accent); font-family: "Iowan Old Style", Georgia, serif; font-size: 24px; }
 .empty-card h2 { font-size: 24px; margin: 0 0 6px; font-weight: 500; }

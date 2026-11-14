@@ -219,3 +219,16 @@ CREATE TABLE import_log (
 INSERT INTO admin_user (username, password, name)
 VALUES ('admin', '$2a$10$LDI3JOpiWOwtEn2qiP2kGeXZv3IMn4kBrAuYW059.0dG5DSfhXONW', '管理员')
 ON DUPLICATE KEY UPDATE username = username;
+
+-- 12. 公告
+CREATE TABLE IF NOT EXISTS `announcement` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `title` VARCHAR(200) NOT NULL,
+  `content` TEXT NOT NULL,
+  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0草稿 1发布',
+  `publish_time` DATETIME DEFAULT NULL,
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_status_publish` (`status`, `publish_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='公告';

@@ -96,3 +96,23 @@ export function deleteUser(id: number): Promise<void> {
 export function clearWordbookWords(id: number): Promise<void> {
   return http.delete(`/admin/wordbooks/${id}/words`)
 }
+
+export function listAnnouncements(pageNo = 1, pageSize = 20): Promise<any> {
+  return http.get('/admin/announcements', { params: { pageNo, pageSize } })
+}
+
+export function createAnnouncement(data: any): Promise<any> {
+  return http.post('/admin/announcements', data)
+}
+
+export function updateAnnouncement(id: number, data: any): Promise<any> {
+  return http.put(`/admin/announcements/${id}`, data)
+}
+
+export function updateAnnouncementStatus(id: number, status: number): Promise<void> {
+  return http.post(`/admin/announcements/${id}/status`, null, { params: { status } })
+}
+
+export function deleteAnnouncement(id: number): Promise<void> {
+  return http.delete(`/admin/announcements/${id}`)
+}

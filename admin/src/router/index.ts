@@ -11,6 +11,7 @@ const router = createRouter({
       children: [
         { path: '', name: 'dashboard', component: () => import('../pages/Dashboard.vue'), meta: { title: '总览' } },
         { path: 'wordbooks', name: 'wordbooks', component: () => import('../pages/Wordbooks.vue'), meta: { title: '词书管理' } },
+        { path: 'announcements', name: 'announcements', component: () => import('../pages/Announcements.vue'), meta: { title: '公告管理' } },
         { path: 'words', name: 'words', component: () => import('../pages/Words.vue'), meta: { title: '词条管理' } },
         { path: 'imports', name: 'imports', component: () => import('../pages/Imports.vue'), meta: { title: '导入记录' } },
         { path: 'users', name: 'users', component: () => import('../pages/Users.vue'), meta: { title: '用户管理' } },

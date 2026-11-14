@@ -59,7 +59,7 @@ async function remove(row: any) {
     { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' }
   )
   await deleteUser(row.id)
-  ElMessage.success('用户已删除')
+  ElMessage.success('删除成功')
   await load()
 }
 
