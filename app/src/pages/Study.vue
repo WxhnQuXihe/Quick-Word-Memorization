@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { currentGroup, markKnown, nextGroup, toggleFavorite } from '../api/app'
+import { resolveAssetUrl } from '../api/http'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,17 +25,19 @@ const percent = computed(() => group.value ? Math.min(100, Math.round((group.val
 
 function preload(words: any[]) {
   for (const word of words) {
-    if (!word.audioUrl || preloaded.has(word.audioUrl)) continue
-    const audio = new Audio(word.audioUrl)
+    const url = resolveAssetUrl(word.audioUrl)
+    if (!url || preloaded.has(url)) continue
+    const audio = new Audio(url)
     audio.preload = 'auto'
-    preloaded.set(word.audioUrl, audio)
+    preloaded.set(url, audio)
   }
 }
 
 function playAudio(card: any) {
-  if (!card.audioUrl) return
+  const url = resolveAssetUrl(card.audioUrl)
+  if (!url) return
   if (currentAudio) currentAudio.pause()
-  currentAudio = new Audio(card.audioUrl)
+  currentAudio = new Audio(url)
   currentAudio.play().catch(() => {})
 }
 

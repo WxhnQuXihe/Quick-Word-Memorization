@@ -6,6 +6,19 @@ import { showToast } from 'vant'
 // 原生包必须注入绝对地址，否则会退化成相对路径而连不上后端。
 const BASE_URL = import.meta.env.VITE_API_BASE || '/api'
 
+function apiOrigin(): string {
+  const base = import.meta.env.VITE_API_BASE
+  if (base && /^https?:\/\//.test(base)) return new URL(base).origin
+  if (Capacitor.isNativePlatform()) return 'http://47.95.66.191:8082'
+  return ''
+}
+
+export function resolveAssetUrl(path: string | undefined | null): string {
+  if (!path) return ''
+  if (/^https?:\/\//.test(path)) return path
+  return apiOrigin() + (path.startsWith('/') ? path : '/' + path)
+}
+
 if (Capacitor.isNativePlatform() && !import.meta.env.VITE_API_BASE) {
   console.error('[shorthand] VITE_API_BASE 未注入：原生包无法访问后端')
 }
