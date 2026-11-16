@@ -42,7 +42,7 @@
 | 端 | 已实现 |
 |---|---|
 | 用户端（App / 移动端 Web） | 登录；词书选择与进度；10 词一组背单词；标熟即时换词；收藏；收藏夹（可再背）；熟词本（只读 + 移出）；主页概览与连续学习天数；公告；意见反馈与回复查看；单词朗读；版本更新提示 |
-| 管理后台 | 总览看板（KPI、词书表、近 14 天活跃度、最近用户、最近导入、JVM 与运行时长）；词书增删改与上下架；词条增删改查；Excel 批量导入与导入记录；用户建号、重置密码、删除（级联清理学习记录）；反馈查看与回复；公告发布 |
+| 管理后台 | 总览看板（KPI、词书表、近 14 天活跃度、最近用户、最近导入、JVM 与运行时长）；词书增删改与上下架；词条增删改查、试听与替换单词音频；Excel 批量导入与导入记录；用户建号、重置密码、删除（级联清理学习记录）；反馈查看与回复；公告发布 |
 | 明确不做 | 注册、支付、社区、实时 TTS / 跟读评分、遗忘曲线、每日目标、复习队列、多管理员、多租户、iOS 维护（工程保留） |
 
 ## 3. 技术栈
@@ -258,6 +258,7 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 | GET | `/dashboard` | 总览数据（KPI、词书、近 14 天活跃度、最近用户、最近导入、JVM 与运行时长） |
 | GET/POST/PUT/DELETE | `/wordbooks` · `/wordbooks/{id}` · `/{id}/status` · `/{id}/words` | 词书 CRUD + 上下架 + 清空词 |
 | GET/POST/PUT/DELETE | `/words` · `/words/{id}` | 词条 CRUD |
+| POST | `/words/{id}/audio` | 上传/替换单词 MP3，更新 `word_audio` |
 | POST · GET | `/import/wordbook` · `/import/logs` | Excel 导入 / 导入记录 |
 | GET/POST/DELETE | `/users` · `/users/{id}/reset-password` · `/users/{id}` | 用户建号 / 重置密码 / 删除 |
 | GET · POST | `/feedback` · `/feedback/{id}/reply` | 反馈列表 / 回复 |
@@ -315,7 +316,7 @@ cd app && npm install && npm run dev
 tools/smoke-test.sh     # BASE / ADMIN_USER / ADMIN_PASS / USER_NAME / USER_PASS 均可覆盖
 ```
 
-后端可覆盖的环境变量：`SERVER_PORT`、`MYSQL_URL`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`、`MYSQL_POOL_SIZE`、`APP_UPLOAD_DIR`、`APP_TOKEN_SECRET`、`APP_TOKEN_DAYS`、`APP_LATEST_VERSION`、`APP_DOWNLOAD_URL`、`APP_UPDATE_NOTES`。
+后端可覆盖的环境变量：`SERVER_PORT`、`MYSQL_URL`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`、`MYSQL_POOL_SIZE`、`APP_UPLOAD_DIR`、`APP_AUDIO_DIR`、`APP_TOKEN_SECRET`、`APP_TOKEN_DAYS`、`APP_LATEST_VERSION`、`APP_DOWNLOAD_URL`、`APP_UPDATE_NOTES`。
 
 ## 12. 部署
 
