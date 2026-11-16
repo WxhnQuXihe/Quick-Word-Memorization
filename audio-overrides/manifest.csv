@@ -1,1 +1,4 @@
-word_id,word,accent,voice,file,checksum,updated_at
+﻿word_id,word,accent,voice,file,checksum,updated_at
+1,abandon,us,af_heart,1-abandon.mp3,0afd8a0f083c431e0234ef91fc46345eaf3dde131c97385f0daf784a1025b04b,2026-11-16 14:46:48
+5671,excitement,us,af_heart,5671-excitement.mp3,0afd8a0f083c431e0234ef91fc46345eaf3dde131c97385f0daf784a1025b04b,2026-11-16 14:51:31
+5968,pub,us,af_heart,5968-pub.mp3,8309fda8d8ceb270ec416dfac676f2661879ab77ed25f3618279364a6a472a13,2026-11-16 14:51:04
