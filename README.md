@@ -357,6 +357,19 @@ tag 推送触发 `.github/workflows/release.yml`：`npm run build` → `cap sync
 - 脚本：`build_wordbooks.py`（四级 / 六级 / 词组 → 标准 Excel）、`build_gaokao_wordbooks.py`（OCR 版高考词书）、`check_phonetics.py`（音标比对与校对）。
 - 词书内容不随仓库分发，需要用的人自备源文件跑脚本。
 
+### 人工修正音频
+
+自动生成的音频不进 Git；只把人工修正的 MP3 放进 `audio-overrides/`：
+
+```bash
+python tools/audio/make_override.py --word abandon --file ~/Downloads/abandon.mp3
+git add audio-overrides
+git commit -m "audio: 修正 abandon"
+git push
+```
+
+推送后 `sync-audio-overrides` 工作流只上传本次变更的文件，并通过后台接口更新 `word_audio`。需要仓库 Secrets：`ADMIN_USERNAME`、`ADMIN_PASSWORD`。
+
 ## 15. 开发约定
 
 改动这个仓库时请守住这些，它们比代码风格重要：
