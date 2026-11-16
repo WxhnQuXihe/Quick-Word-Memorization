@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createWord, deleteWord, listWords, updateWord } from '../api/admin'
+import { createWord, deleteWord, listWords, updateWord, uploadWordAudio } from '../api/admin'
 
 const rows = ref<any[]>([])
 const total = ref(0)
@@ -60,6 +60,28 @@ async function remove(row: any) {
   await load()
 }
 
+async function uploadAudio(row: any, options: any) {
+  const file = options.file as File
+  if (!file) return
+  if (!file.name.toLowerCase().endsWith('.mp3')) {
+    ElMessage.warning('只支持 MP3 文件')
+    options.onError?.(new Error('not mp3'))
+    return
+  }
+  try {
+    await uploadWordAudio(row.id, file)
+    ElMessage.success('音频已替换')
+    options.onSuccess?.({})
+    await load()
+  } catch (e) {
+    options.onError?.(e)
+  }
+}
+
+function uploadFor(row: any) {
+  return (opts: any) => uploadAudio(row, opts)
+}
+
 function search() {
   pageNo.value = 1
   load()
@@ -78,16 +100,23 @@ onMounted(load)
     </div>
     <div class="panel" v-loading="loading">
       <table>
-        <thead><tr><th>单词</th><th>音标</th><th>释义</th><th>更新</th><th class="right">操作</th></tr></thead>
+        <thead><tr><th>单词</th><th>音标</th><th>释义</th><th>音频</th><th>更新</th><th class="right">操作</th></tr></thead>
         <tbody>
           <tr v-for="w in rows" :key="w.id">
             <td><b>{{ w.word }}</b></td>
             <td class="mono">{{ w.phoneticUk || w.phoneticUs || '-' }}</td>
             <td class="meaning"><span v-for="(line, i) in (w.meaning || '').split('\n')" :key="i" class="line">{{ line }}</span></td>
+            <td class="audio-cell">
+              <audio v-if="w.audioUrl" :src="w.audioUrl" controls preload="none" class="audio"></audio>
+              <span v-else class="mono">无</span>
+              <el-upload :show-file-list="false" :http-request="uploadFor(w)" accept=".mp3,audio/mpeg">
+                <el-button link>{{ w.audioUrl ? '替换' : '上传' }}</el-button>
+              </el-upload>
+            </td>
             <td class="mono">{{ (w.updateTime || '').replace('T', ' ').slice(0, 16) }}</td>
             <td class="right"><el-button link @click="openEdit(w)">编辑</el-button><el-button link @click="remove(w)">删除</el-button></td>
           </tr>
-          <tr v-if="!rows.length"><td colspan="5" class="empty">没有词条</td></tr>
+          <tr v-if="!rows.length"><td colspan="6" class="empty">没有词条</td></tr>
         </tbody>
       </table>
     </div>
@@ -128,7 +157,9 @@ td { padding: 12px 16px; font-size: 12px; border-bottom: 1px solid #14191e; vert
 tr:last-child td { border-bottom: 0; }
 tbody tr:hover { background: #10151a; }
 .mono { font-family: var(--mono); font-size: 10px; color: var(--muted); }
-.meaning { color: #b9c2cc; max-width: 520px; }
+.meaning { color: #b9c2cc; max-width: 460px; }
+.audio-cell { min-width: 190px; }
+.audio { width: 150px; height: 30px; display: block; margin-bottom: 2px; }
 .line { display: block; line-height: 1.6; }
 .right { text-align: right; white-space: nowrap; }
 .empty { text-align: center; color: var(--muted); padding: 34px; }

@@ -116,3 +116,12 @@ export function updateAnnouncementStatus(id: number, status: number): Promise<vo
 export function deleteAnnouncement(id: number): Promise<void> {
   return http.delete(`/admin/announcements/${id}`)
 }
+
+export function uploadWordAudio(id: number, file: File): Promise<{ audioUrl: string }> {
+  const form = new FormData()
+  form.append('file', file)
+  return http.post(`/admin/words/${id}/audio`, form, {
+    timeout: 300000,
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}

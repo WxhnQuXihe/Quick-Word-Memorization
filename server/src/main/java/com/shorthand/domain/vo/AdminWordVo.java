@@ -16,4 +16,5 @@ public class AdminWordVo {
     private String exampleEn;
     private String exampleCn;
     private LocalDateTime updateTime;
+    private String audioUrl;
 }
