@@ -3,6 +3,12 @@ name: deploy-shorthand
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'audio-overrides/**'
+      - 'tools/**'
+      - 'docs/**'
+      - 'README.md'
+      - '.github/**'
   workflow_dispatch:
 
 jobs:
