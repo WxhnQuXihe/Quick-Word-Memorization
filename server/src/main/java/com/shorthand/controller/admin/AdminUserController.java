@@ -4,6 +4,7 @@ import com.shorthand.common.Result;
 import com.shorthand.domain.bo.CreateUserBo;
 import com.shorthand.domain.bo.ResetPasswordBo;
 import com.shorthand.service.IAdminUserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "后台-用户")
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor

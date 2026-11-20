@@ -2,6 +2,7 @@ package com.shorthand.controller.admin;
 
 import com.shorthand.common.Result;
 import com.shorthand.service.IAdminImportService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Tag(name = "后台-导入")
 @RestController
 @RequestMapping("/api/admin/import")
 @RequiredArgsConstructor

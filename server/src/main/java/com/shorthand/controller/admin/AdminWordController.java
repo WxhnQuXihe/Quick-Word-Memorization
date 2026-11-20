@@ -3,6 +3,7 @@ package com.shorthand.controller.admin;
 import com.shorthand.common.Result;
 import com.shorthand.domain.bo.WordSaveBo;
 import com.shorthand.service.IAdminWordService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "后台-词条")
 @RestController
 @RequestMapping("/api/admin/words")
 @RequiredArgsConstructor

@@ -52,14 +52,14 @@
 | 用户端 | Vue 3.5 + Vite + TypeScript + Pinia + Vue Router 4 + Vant 4，自研 Design Token |
 | App 壳 | Capacitor 6（Android 为主，iOS 工程保留不维护） |
 | 管理后台 | Vue 3.5 + Vite + TypeScript + Element Plus 2.9 |
-| 服务端 | Spring Boot 3.2.12 / Java 17，MyBatis-Plus 3.5.7，EasyExcel，Lombok |
+| 服务端 | Spring Boot 3.2.12 / Java 17，MyBatis-Plus 3.5.7，EasyExcel，Knife4j 4.5.0，Lombok |
 | 数据库 | MySQL 8（库名 `shorthand`，`utf8mb4_unicode_ci`） |
 | 单词音频 | Kokoro-82M ONNX 离线生成 MP3，Nginx 静态分发 |
 | 鉴权 | 自研 HMAC 无状态 token（见 §8.3），未引入 Sa-Token / Spring Security |
 | 网关 | 反向代理（Nginx）承接静态站点与 `/api` 转发 |
 | CI/CD | GitHub Actions（自动部署 + Android 签名包发布） |
 
-> 项目里**没有** Redis、消息队列、Sa-Token、Knife4j / Swagger、任何缓存层。这些不是遗漏，是刻意保持单进程可跑。
+> 项目里**没有** Redis、消息队列、Sa-Token、任何缓存层。这些不是遗漏，是刻意保持单进程可跑。
 
 ## 4. 仓库结构
 
@@ -229,6 +229,8 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 
 ## 9. 接口一览
 
+在线文档：`http://47.95.66.191:8082/doc.html`（Knife4j，OpenAPI JSON 为 `/v3/api-docs`）。文档页公开访问，但所有业务接口仍校验 token；需要隐藏时可在 Nginx 对 `/doc.html`、`/v3/api-docs`、`/webjars/` 加 Basic Auth。
+
 用户端（`Authorization` 为用户 token）：
 
 | 方法 | 路径 | 说明 |
@@ -388,7 +390,7 @@ git push
 - **token 无法服务端吊销**：无状态签名的代价。改 `APP_TOKEN_SECRET` 会让所有端一起掉线，这是唯一的「一键下线」手段。
 - **选词在 JVM 内存里算**：每次取组要把本书全部 wordId + 已熟集合 + 本轮已用集合拉进内存。单书万级词以内没问题，再大就要换策略。
 - **单实例，没有水平扩展设计**：单进程、小连接池；上传文件落本地磁盘，多实例之间不共享。
-- **无 API 文档页**：接口以本文档 §9 与 controller 为准。
+- **API 文档页公开**：`/doc.html` 只暴露接口结构，不提供免鉴权调用；业务接口仍需 token。生产环境若要隐藏，需在 Nginx 层加认证。
 - **iOS 未维护**：`app/ios` 工程还在，但没有构建与发布链路。
 - **词书需自备**：仓库不含任何词表数据，空库启动只有登录页。
 - **音频需维护**：新增单词后要补跑 `tools/tts/generate_all.py --resume`，否则新词没有朗读按钮；当前已生成 6,073 条 MP3。

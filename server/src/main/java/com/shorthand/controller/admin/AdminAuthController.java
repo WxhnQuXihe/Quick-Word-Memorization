@@ -4,6 +4,7 @@ import com.shorthand.common.Result;
 import com.shorthand.domain.bo.LoginBo;
 import com.shorthand.domain.bo.PasswordChangeBo;
 import com.shorthand.service.IAuthService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "后台-认证")
 @RestController
 @RequestMapping("/api/admin/auth")
 @RequiredArgsConstructor

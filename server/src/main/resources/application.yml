@@ -16,6 +16,19 @@ spring:
       max-file-size: 12MB
       max-request-size: 12MB
 
+knife4j:
+  enable: true
+  production: ${KNIFE4J_PRODUCTION:false}
+  setting:
+    language: zh_cn
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  packages-to-scan: com.shorthand.controller
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true

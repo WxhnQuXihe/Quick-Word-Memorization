@@ -1,6 +1,7 @@
 package com.shorthand.controller;
 
 import com.shorthand.common.Result;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+@Tag(name = "用户-版本")
 @RestController
 @RequestMapping("/api/app")
 public class AppVersionController {

@@ -3,6 +3,7 @@ package com.shorthand.controller.admin;
 import com.shorthand.common.Result;
 import com.shorthand.domain.bo.ReplyBo;
 import com.shorthand.service.IAdminFeedbackService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "后台-反馈")
 @RestController
 @RequestMapping("/api/admin/feedback")
 @RequiredArgsConstructor
