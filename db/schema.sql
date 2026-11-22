@@ -135,6 +135,7 @@ CREATE TABLE study_group_word (
   update_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uk_group_position (group_id, position),
+  UNIQUE KEY uk_group_word (group_id, word_id),
   KEY idx_word (word_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '组内单词';
 

@@ -22,9 +22,12 @@ import com.shorthand.mapper.WordMapper;
 import com.shorthand.mapper.WordbookWordMapper;
 import com.shorthand.mapper.WordAudioMapper;
 import com.shorthand.service.IStudyService;
+import com.shorthand.service.StudyLockManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -55,21 +58,29 @@ public class StudyServiceImpl implements IStudyService {
     private final StudyGroupMapper studyGroupMapper;
     private final StudyGroupWordMapper studyGroupWordMapper;
     private final UserWordMapper userWordMapper;
+    private final StudyLockManager studyLockManager;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
-    @Transactional
     public GroupVo current(Long userId, Long wordbookId) {
+        return studyLockManager.withLock(userId, wordbookId,
+                () -> transactionTemplate.execute(status -> doCurrent(userId, wordbookId)));
+    }
+
+    private GroupVo doCurrent(Long userId, Long wordbookId) {
         UserWordbook userBook = getOrCreateUserBook(userId, wordbookId);
         return ensureGroup(userBook);
     }
 
     @Override
-    @Transactional
     public GroupVo next(Long userId, Long groupId) {
-        StudyGroup group = studyGroupMapper.selectById(groupId);
-        if (group == null || !group.getUserId().equals(userId)) {
-            throw new BizException("学习组不存在");
-        }
+        StudyGroup snapshot = requireGroup(userId, groupId);
+        return studyLockManager.withLock(userId, snapshot.getWordbookId(),
+                () -> transactionTemplate.execute(status -> doNext(userId, groupId)));
+    }
+
+    private GroupVo doNext(Long userId, Long groupId) {
+        StudyGroup group = requireGroup(userId, groupId);
         if (group.getStatus() == null || group.getStatus() == 0) {
             group.setStatus(1);
             group.setFinishTime(LocalDateTime.now());
@@ -80,8 +91,14 @@ public class StudyServiceImpl implements IStudyService {
     }
 
     @Override
-    @Transactional
     public WordVo markKnown(Long userId, Long groupId, Long wordId) {
+        StudyGroup snapshot = requireGroup(userId, groupId);
+        return studyLockManager.withLock(userId, snapshot.getWordbookId(),
+                () -> transactionTemplate.execute(status -> doMarkKnown(userId, groupId, wordId)));
+    }
+
+    private WordVo doMarkKnown(Long userId, Long groupId, Long wordId) {
+        StudyGroup group = requireGroup(userId, groupId);
         StudyGroupWord groupWord = studyGroupWordMapper.selectList(Wrappers.<StudyGroupWord>lambdaQuery()
                         .eq(StudyGroupWord::getGroupId, groupId)
                         .eq(StudyGroupWord::getWordId, wordId)
@@ -89,10 +106,6 @@ public class StudyServiceImpl implements IStudyService {
                 .stream().findFirst().orElse(null);
         if (groupWord == null) {
             throw new BizException("这个词不在当前组里");
-        }
-        StudyGroup group = studyGroupMapper.selectById(groupId);
-        if (group == null || !group.getUserId().equals(userId)) {
-            throw new BizException("学习组不存在");
         }
 
         UserWord state = findUserWord(userId, wordId);
@@ -112,22 +125,40 @@ public class StudyServiceImpl implements IStudyService {
             userWordMapper.updateById(state);
         }
 
-        List<Long> candidates = candidates(userId, group.getWordbookId(), group.getRoundNo());
+        // 组内 word_id 唯一约束可能在多实例并发时冲突；冲突后重新取候选并重试。
+        for (int attempt = 0; attempt < 3; attempt++) {
+            List<Long> candidates = candidates(userId, group.getWordbookId(), group.getRoundNo());
+            if (candidates.isEmpty()) {
+                groupWord.setStatus(2);
+                groupWord.setWordId(null);
+                groupWord.setUpdateTime(LocalDateTime.now());
+                studyGroupWordMapper.updateById(groupWord);
+                return null;
+            }
 
-        if (candidates.isEmpty()) {
-            groupWord.setStatus(2);
-            groupWord.setWordId(null);
+            Long replacementId = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+            groupWord.setWordId(replacementId);
             groupWord.setUpdateTime(LocalDateTime.now());
-            studyGroupWordMapper.updateById(groupWord);
-            return null;
+            try {
+                studyGroupWordMapper.updateById(groupWord);
+                touchSeen(userId, List.of(replacementId), group.getWordbookId());
+                return toWordVo(wordMapper.selectById(replacementId),
+                        audioUrls(List.of(replacementId)).get(replacementId));
+            } catch (DuplicateKeyException e) {
+                if (attempt == 2) {
+                    throw new BizException("换词冲突，请重试");
+                }
+            }
         }
+        throw new BizException("换词冲突，请重试");
+    }
 
-        Long replacementId = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
-        groupWord.setWordId(replacementId);
-        groupWord.setUpdateTime(LocalDateTime.now());
-        studyGroupWordMapper.updateById(groupWord);
-        touchSeen(userId, List.of(replacementId), group.getWordbookId());
-        return toWordVo(wordMapper.selectById(replacementId), audioUrls(List.of(replacementId)).get(replacementId));
+    private StudyGroup requireGroup(Long userId, Long groupId) {
+        StudyGroup group = studyGroupMapper.selectById(groupId);
+        if (group == null || !group.getUserId().equals(userId)) {
+            throw new BizException("学习组不存在");
+        }
+        return group;
     }
 
     @Override
