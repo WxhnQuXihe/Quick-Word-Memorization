@@ -112,12 +112,7 @@ public class StudyServiceImpl implements IStudyService {
             userWordMapper.updateById(state);
         }
 
-        List<Long> bookWordIds = bookWordIds(group.getWordbookId());
-        Set<Long> knownIds = knownIds(userId);
-        Set<Long> currentGroupIds = currentGroupIds(groupId);
-        List<Long> candidates = bookWordIds.stream()
-                .filter(id -> !knownIds.contains(id) && !currentGroupIds.contains(id))
-                .toList();
+        List<Long> candidates = candidates(userId, group.getWordbookId(), group.getRoundNo());
 
         if (candidates.isEmpty()) {
             groupWord.setStatus(2);
@@ -255,11 +250,18 @@ public class StudyServiceImpl implements IStudyService {
     }
 
     private List<Long> candidates(UserWordbook userBook) {
-        List<Long> bookWordIds = bookWordIds(userBook.getWordbookId());
-        Set<Long> known = knownIds(userBook.getUserId());
-        Set<Long> used = usedIds(userBook);
+        return candidates(userBook.getUserId(), userBook.getWordbookId(), userBook.getCurrentRoundNo());
+    }
+
+    private List<Long> candidates(Long userId, Long wordbookId, Integer roundNo) {
+        return filterCandidates(bookWordIds(wordbookId), knownIds(userId),
+                usedIds(userId, wordbookId, roundNo));
+    }
+
+    static List<Long> filterCandidates(List<Long> bookWordIds, Set<Long> knownIds, Set<Long> usedIds) {
         return bookWordIds.stream()
-                .filter(id -> !known.contains(id) && !used.contains(id))
+                .filter(Objects::nonNull)
+                .filter(id -> !knownIds.contains(id) && !usedIds.contains(id))
                 .toList();
     }
 
@@ -268,7 +270,7 @@ public class StudyServiceImpl implements IStudyService {
                         .select(WordbookWord::getWordId)
                         .eq(WordbookWord::getWordbookId, wordbookId)
                         .orderByAsc(WordbookWord::getSeq))
-                .stream().map(v -> ((Number) v).longValue()).toList();
+                .stream().map(v -> ((Number) v).longValue()).distinct().toList();
     }
 
     private Set<Long> knownIds(Long userId) {
@@ -279,24 +281,16 @@ public class StudyServiceImpl implements IStudyService {
                 .stream().map(v -> ((Number) v).longValue()).collect(Collectors.toSet());
     }
 
-    private Set<Long> usedIds(UserWordbook userBook) {
+    private Set<Long> usedIds(Long userId, Long wordbookId, Integer roundNo) {
         List<StudyGroup> groups = studyGroupMapper.selectList(Wrappers.<StudyGroup>lambdaQuery()
-                .eq(StudyGroup::getUserId, userBook.getUserId())
-                .eq(StudyGroup::getWordbookId, userBook.getWordbookId())
-                .eq(StudyGroup::getRoundNo, userBook.getCurrentRoundNo()));
+                .eq(StudyGroup::getUserId, userId)
+                .eq(StudyGroup::getWordbookId, wordbookId)
+                .eq(StudyGroup::getRoundNo, roundNo));
         if (groups.isEmpty()) return Set.of();
         List<Long> groupIds = groups.stream().map(StudyGroup::getId).toList();
         return studyGroupWordMapper.selectObjs(Wrappers.<StudyGroupWord>lambdaQuery()
                         .select(StudyGroupWord::getWordId)
                         .in(StudyGroupWord::getGroupId, groupIds))
-                .stream().filter(Objects::nonNull).map(v -> ((Number) v).longValue())
-                .collect(Collectors.toSet());
-    }
-
-    private Set<Long> currentGroupIds(Long groupId) {
-        return studyGroupWordMapper.selectObjs(Wrappers.<StudyGroupWord>lambdaQuery()
-                        .select(StudyGroupWord::getWordId)
-                        .eq(StudyGroupWord::getGroupId, groupId))
                 .stream().filter(Objects::nonNull).map(v -> ((Number) v).longValue())
                 .collect(Collectors.toSet());
     }
