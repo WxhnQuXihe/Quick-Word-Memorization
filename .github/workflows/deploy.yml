@@ -25,7 +25,7 @@ jobs:
 
       - name: Build server
         working-directory: server
-        run: mvn -B -DskipTests package
+        run: mvn -B package
 
       - uses: actions/setup-node@v4
         with:
