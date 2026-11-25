@@ -5,7 +5,7 @@
 不开放注册，不设每日目标，不排复习队列 —— 只做一件事：把一本词书按轮次刷完。
 
 > 项目名 `Shorthand`，App 显示名「神也背单词」。仓库为 monorepo，用户端、管理后台、服务端共用一套 REST API。
-> 当前版本：**v0.5.1**（Android 签名包；包含单词朗读和版本更新提示）。
+> 当前版本：**v0.5.2**（Android 签名包；修复熟词本/收藏夹只显示前 20 条，补充分页浏览与学习取词加固）。
 > 本文按当前代码写成，不是方案文档的转述；两者冲突时以代码为准。
 
 ## 目录
@@ -41,7 +41,7 @@
 
 | 端 | 已实现 |
 |---|---|
-| 用户端（App / 移动端 Web） | 登录；词书选择与进度；10 词一组背单词；标熟即时换词；收藏；收藏夹（可再背）；熟词本（只读 + 移出）；主页概览与连续学习天数；公告；意见反馈与回复查看；单词朗读；版本更新提示 |
+| 用户端（App / 移动端 Web） | 登录；词书选择与进度；10 词一组背单词；标熟即时换词；收藏；收藏夹（可再背、20 条/页）；熟词本（只读、20 条/页、可移出）；主页概览与连续学习天数；公告；意见反馈与回复查看；单词朗读；版本更新提示 |
 | 管理后台 | 总览看板（KPI、词书表、近 14 天活跃度、最近用户、最近导入、JVM 与运行时长）；词书增删改与上下架；词条增删改查、试听与替换单词音频；Excel 批量导入与导入记录；用户建号、重置密码、删除（级联清理学习记录）；反馈查看与回复；公告发布 |
 | 明确不做 | 注册、支付、社区、实时 TTS / 跟读评分、遗忘曲线、每日目标、复习队列、多管理员、多租户、iOS 维护（工程保留） |
 
@@ -342,11 +342,13 @@ CI/CD 是三条 GitHub Actions：
 
 用户端有可见改动就要发版 —— 版本号是用户能感知的东西（`app/src/version.ts` 的 `APP_VERSION`，与后端 `APP_LATEST_VERSION` 对齐，用于更新提示）。
 
+发布说明是版本的一部分，先写 `.github/release-notes/vX.Y.Z.md`，再打 tag：
+
 ```bash
-tools/release.sh v0.5.1        # 打 tag 并推送
+tools/release.sh v0.5.2        # 检查发布说明、打 tag 并推送
 ```
 
-tag 推送触发 `.github/workflows/release.yml`：`npm run build` → `cap sync android` → 用 secrets 里的 keystore 签名 → `assembleRelease` → 上传 GitHub Release（APK 可直接覆盖安装）。
+`tools/release.sh` 会先确认对应的 release note 存在；tag 推送触发 `.github/workflows/release.yml`：`npm run build` → `cap sync android` → 用 secrets 里的 keystore 签名 → `assembleRelease` → 上传 GitHub Release；Release 正文读取 `.github/release-notes/<tag>.md`，不再使用通用模板。APK 可直接覆盖安装。
 
 打包时后端地址通过 `VITE_API_BASE` 注入；未注入时回落到 `app/src/api/http.ts` 里的默认值 —— 换环境请改这里或注入变量，别在代码里散落地址。
 

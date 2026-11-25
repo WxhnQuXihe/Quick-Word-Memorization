@@ -53,6 +53,6 @@ app:
   audio-dir: ${APP_AUDIO_DIR:./data/audio}
   token-secret: ${APP_TOKEN_SECRET:shorthand-dev-secret-change-me}
   token-days: ${APP_TOKEN_DAYS:90}
-  latest-version: ${APP_LATEST_VERSION:0.5.1}
+  latest-version: ${APP_LATEST_VERSION:0.5.2}
   download-url: ${APP_DOWNLOAD_URL:https://github.com/WxhnQuXihe/Quick-Word-Memorization/releases/latest}
-  update-notes: ${APP_UPDATE_NOTES:修复问题并带来新的主页体验}
+  update-notes: ${APP_UPDATE_NOTES:熟词本与收藏夹支持分页，学习取词重复问题已修复}
