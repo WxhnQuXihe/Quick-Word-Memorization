@@ -11,6 +11,6 @@ if [[ ! -f "$NOTES" ]]; then
   exit 1
 fi
 
-git tag -a "$TAG" -F "$NOTES"
+git tag -a "$TAG" --cleanup=verbatim -F "$NOTES"
 git push origin "$TAG"
 echo "已推送 $TAG，GitHub Actions 将使用 $NOTES 作为 Release 正文并构建 Android APK。"
