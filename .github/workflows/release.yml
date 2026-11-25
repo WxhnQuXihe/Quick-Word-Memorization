@@ -58,6 +58,7 @@ jobs:
     needs: android
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -65,9 +66,6 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: Shorthand ${{ github.event.inputs.tag || github.ref_name }}
-          body: |
-            Shorthand 自动构建产物。
-
-            - Android：release 签名 APK，可直接覆盖安装
+          body_path: .github/release-notes/${{ github.event.inputs.tag || github.ref_name }}.md
           files: |
             artifacts/android-apk/app-release.apk
