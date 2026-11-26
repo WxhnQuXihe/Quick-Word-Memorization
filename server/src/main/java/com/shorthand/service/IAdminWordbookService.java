@@ -15,4 +15,6 @@ public interface IAdminWordbookService {
     void updateStatus(Long id, Integer status);
 
     void clearWords(Long id);
+
+    byte[] exportExcel(Long id);
 }

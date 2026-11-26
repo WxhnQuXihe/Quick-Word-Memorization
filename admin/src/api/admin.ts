@@ -97,6 +97,10 @@ export function clearWordbookWords(id: number): Promise<void> {
   return http.delete(`/admin/wordbooks/${id}/words`)
 }
 
+export function exportWordbook(id: number): Promise<Blob> {
+  return http.get(`/admin/wordbooks/${id}/export`, { responseType: 'blob', timeout: 300000 }).then((res: any) => res.data ?? res)
+}
+
 export function listAnnouncements(pageNo = 1, pageSize = 20): Promise<any> {
   return http.get('/admin/announcements', { params: { pageNo, pageSize } })
 }

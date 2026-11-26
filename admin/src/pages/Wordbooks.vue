@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { clearWordbookWords, createWordbook, listWordbooks, updateWordbook, updateWordbookStatus } from '../api/admin'
+import { clearWordbookWords, createWordbook, exportWordbook, listWordbooks, updateWordbook, updateWordbookStatus } from '../api/admin'
 
 const rows = ref<any[]>([])
 const loading = ref(false)
+const exporting = ref<number | null>(null)
 const dialog = ref(false)
 const editing = ref<number | null>(null)
 const form = reactive({ code: '', name: '', description: '', difficulty: 3, sort: 100 })
@@ -51,6 +52,27 @@ async function toggle(row: any) {
   await load()
 }
 
+async function exportBook(row: any) {
+  if (exporting.value) return
+  exporting.value = row.id
+  try {
+    const blob = await exportWordbook(row.id)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${row.name || row.code || 'wordbook'}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    ElMessage.success('已导出')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '导出失败，请稍后重试')
+  } finally {
+    exporting.value = null
+  }
+}
+
 async function clear(row: any) {
   await ElMessageBox.confirm(
     `清空「${row.name}」后，这本书里的 ${row.wordCount || 0} 个单词关联会全部删除；单词本身若被其他词书使用不会删除。`,
@@ -68,7 +90,7 @@ onMounted(load)
 <template>
   <div class="page">
     <div class="toolbar">
-      <div class="hint">{{ rows.length }} 本词书 · 词条用 Excel 导入</div>
+      <div class="hint">{{ rows.length }} 本词书 · 词条用 Excel 导入/导出</div>
       <el-button type="primary" @click="openCreate">新建词书</el-button>
     </div>
     <div class="panel" v-loading="loading">
@@ -83,6 +105,7 @@ onMounted(load)
             <td class="mono">{{ b.updateTime ? b.updateTime.replace('T', ' ').slice(0, 16) : '-' }}</td>
             <td class="right">
               <el-button link @click="openEdit(b)">编辑</el-button>
+              <el-button link :loading="exporting === b.id" @click="exportBook(b)">导出</el-button>
               <el-button link @click="toggle(b)">{{ b.status === 1 ? '下架' : '上架' }}</el-button>
               <el-button link type="danger" @click="clear(b)">清空单词</el-button>
             </td>

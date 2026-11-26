@@ -6,6 +6,9 @@ import com.shorthand.service.IAdminWordbookService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,5 +51,15 @@ public class AdminWordbookController {
     public Result clearWords(@PathVariable Long id) {
         adminWordbookService.clearWords(id);
         return Result.ok();
+    }
+
+    @GetMapping("/{id}/export")
+    public ResponseEntity<byte[]> export(@PathVariable Long id) {
+        byte[] content = adminWordbookService.exportExcel(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"wordbook-" + id + ".xlsx\"")
+                .contentLength(content.length)
+                .body(content);
     }
 }

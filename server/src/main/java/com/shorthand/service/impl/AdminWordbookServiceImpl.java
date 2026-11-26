@@ -1,11 +1,15 @@
 package com.shorthand.service.impl;
 
+import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.shorthand.common.BizException;
+import com.shorthand.domain.Word;
 import com.shorthand.domain.Wordbook;
 import com.shorthand.domain.WordbookWord;
 import com.shorthand.domain.bo.WordbookSaveBo;
+import com.shorthand.domain.vo.WordImportVo;
 import com.shorthand.domain.vo.WordbookVo;
+import com.shorthand.mapper.WordMapper;
 import com.shorthand.mapper.WordbookMapper;
 import com.shorthand.mapper.WordbookWordMapper;
 import com.shorthand.service.IAdminWordbookService;
@@ -13,13 +17,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminWordbookServiceImpl implements IAdminWordbookService {
     private final WordbookMapper wordbookMapper;
     private final WordbookWordMapper wordbookWordMapper;
+    private final WordMapper wordMapper;
 
     @Override
     public List<WordbookVo> list() {
@@ -75,6 +84,38 @@ public class AdminWordbookServiceImpl implements IAdminWordbookService {
                 .eq(WordbookWord::getWordbookId, id));
         book.setWordCount(0);
         wordbookMapper.updateById(book);
+    }
+
+    @Override
+    public byte[] exportExcel(Long id) {
+        Wordbook book = wordbookMapper.selectById(id);
+        if (book == null) throw new BizException("词书不存在");
+        List<WordbookWord> relations = wordbookWordMapper.selectList(Wrappers.<WordbookWord>lambdaQuery()
+                .eq(WordbookWord::getWordbookId, id)
+                .orderByAsc(WordbookWord::getSeq));
+        List<Long> wordIds = relations.stream().map(WordbookWord::getWordId).filter(java.util.Objects::nonNull).toList();
+        Map<Long, Word> words = wordIds.isEmpty() ? Map.of() : wordMapper.selectBatchIds(wordIds).stream()
+                .collect(Collectors.toMap(Word::getId, w -> w, (a, b) -> a));
+
+        List<WordImportVo> rows = new ArrayList<>();
+        for (WordbookWord relation : relations) {
+            Word word = words.get(relation.getWordId());
+            if (word == null) continue;
+            WordImportVo row = new WordImportVo();
+            row.setSeq(relation.getSeq());
+            row.setWord(word.getWord());
+            row.setPhoneticUk(word.getPhoneticUk());
+            row.setPhoneticUs(word.getPhoneticUs());
+            row.setPos(word.getPos());
+            row.setMeaning(word.getMeaning());
+            row.setExampleEn(word.getExampleEn());
+            row.setExampleCn(word.getExampleCn());
+            rows.add(row);
+        }
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        EasyExcel.write(output, WordImportVo.class).sheet("单词").doWrite(rows);
+        return output.toByteArray();
     }
 
     private void apply(Wordbook book, WordbookSaveBo bo) {

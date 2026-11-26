@@ -42,7 +42,7 @@
 | 端 | 已实现 |
 |---|---|
 | 用户端（App / 移动端 Web） | 登录；词书选择与进度；10 词一组背单词；标熟即时换词；收藏；收藏夹（可再背、20 条/页）；熟词本（只读、20 条/页、可移出）；主页概览与连续学习天数；公告；意见反馈与回复查看；单词朗读；版本更新提示 |
-| 管理后台 | 总览看板（KPI、词书表、近 14 天活跃度、最近用户、最近导入、JVM 与运行时长）；词书增删改与上下架；词条增删改查、试听与替换单词音频；Excel 批量导入与导入记录；用户建号、重置密码、删除（级联清理学习记录）；反馈查看与回复；公告发布 |
+| 管理后台 | 总览看板（KPI、词书表、近 14 天活跃度、最近用户、最近导入、JVM 与运行时长）；词书增删改、上下架与 Excel 导出；词条增删改查、试听与替换单词音频；Excel 批量导入与导入记录；用户建号、重置密码、删除（级联清理学习记录）；反馈查看与回复；公告发布 |
 | 明确不做 | 注册、支付、社区、实时 TTS / 跟读评分、遗忘曲线、每日目标、复习队列、多管理员、多租户、iOS 维护（工程保留） |
 
 ## 3. 技术栈
@@ -259,6 +259,7 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 | POST | `/auth/login` · `/auth/password` | 登录 / 改密 |
 | GET | `/dashboard` | 总览数据（KPI、词书、近 14 天活跃度、最近用户、最近导入、JVM 与运行时长） |
 | GET/POST/PUT/DELETE | `/wordbooks` · `/wordbooks/{id}` · `/{id}/status` · `/{id}/words` | 词书 CRUD + 上下架 + 清空词 |
+| GET | `/wordbooks/{id}/export` | 按书内顺序导出标准 8 列 Excel，可直接回流导入 |
 | GET/POST/PUT/DELETE | `/words` · `/words/{id}` | 词条 CRUD |
 | POST | `/words/{id}/audio` | 上传/替换单词 MP3，更新 `word_audio` |
 | POST · GET | `/import/wordbook` · `/import/logs` | Excel 导入 / 导入记录 |
@@ -357,7 +358,10 @@ tools/release.sh v0.5.2        # 检查发布说明、打 tag 并推送
 数据链路：**PDF/Excel 源文件 → `tools/` 脚本清洗 → 标准导入 Excel → 后台上传 → EasyExcel 读表入库**。
 
 - `db/schema.sql` 不预置任何词条，词书完全由导入产生。
+- 标准模板 8 列依次为：序号、单词、英式音标、美式音标、词性、释义、英文例句、例句翻译；「英式音标」写入 `word.phonetic_uk`，「美式音标」写入 `word.phonetic_us`，两列独立保存。
 - 导入模板的「释义」单元格一行一个词性；`WordImportListener` 逐行读取，Service 写 `word` + `wordbook_word`，同时刷新 `wordbook.word_count` 并记 `import_log`（总行数 / 成功 / 失败 / 错误文件）。
+- `word` 是全局共享词条（按 `normalized` 唯一），`wordbook_word` 只负责书内顺序；同一个单词出现在多本书时复用同一个 `word_id`。当前导入只新增词条和关联，**不会覆盖已存在词条的内容**。
+- 后台词书页的「导出」按 `wordbook_word.seq` 导出同一套 8 列模板，可用于备份、审校或作为新版本词书的导入底稿。
 - 脚本：`build_wordbooks.py`（四级 / 六级 / 词组 → 标准 Excel）、`build_gaokao_wordbooks.py`（OCR 版高考词书）、`check_phonetics.py`（音标比对与校对）。
 - 词书内容不随仓库分发，需要用的人自备源文件跑脚本。
 
