@@ -12,6 +12,7 @@ public class WordbookWord {
     private Long id;
     private Long wordbookId;
     private Long wordId;
+    private Long entryId;
     private Integer seq;
     private String unit;
 }

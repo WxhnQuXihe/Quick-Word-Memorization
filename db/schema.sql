@@ -33,7 +33,7 @@ CREATE TABLE app_user (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'C 端用户';
 
 -- ---------------------------------------------------------------------------
--- 2. 词书（三本：四级 / 六级 / 词组）
+-- 2. 词书（当前五本：高考 / 专升本 / 四级 / 六级 / 考研）
 -- ---------------------------------------------------------------------------
 CREATE TABLE wordbook (
   id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -53,12 +53,14 @@ CREATE TABLE wordbook (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '词书';
 
 -- ---------------------------------------------------------------------------
--- 3. 单词（全局词条，三本书共享）
+-- 3. 单词（读音身份 lexeme，五本词书共享）
 -- ---------------------------------------------------------------------------
 CREATE TABLE word (
   id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  word        VARCHAR(64)     NOT NULL                COMMENT '单词/词组',
-  normalized  VARCHAR(64)     NOT NULL                COMMENT '小写去空格，查重',
+  word        VARCHAR(64)     NOT NULL                COMMENT '单词/词组；作为 lexeme 的显示词头',
+  normalized  VARCHAR(64)     NOT NULL                COMMENT '小写、NFKC、空格合并后的查重键',
+  headword_key VARCHAR(64)    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '大小写敏感的原始词头键；march/March 分开',
+  pronunciation_key VARCHAR(64) NOT NULL DEFAULT ''    COMMENT '标准化读音键；优先美音',
   phonetic_uk VARCHAR(64)     DEFAULT NULL,
   phonetic_us VARCHAR(64)     DEFAULT NULL,
   pos         VARCHAR(32)     DEFAULT NULL            COMMENT '首个词性，如 v./n.；完整词性见 meaning 多行',
@@ -69,9 +71,54 @@ CREATE TABLE word (
   update_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   deleted     TINYINT         NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
-  UNIQUE KEY uk_normalized (normalized),
+  UNIQUE KEY uk_word_identity (normalized, pronunciation_key, headword_key),
   KEY idx_word (word)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '单词词条';
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '单词词条（兼容 lexeme）';
+
+-- ---------------------------------------------------------------------------
+-- 3.1 词条（word_entry）：一条记录代表一个词书里的完整义项集合
+-- ---------------------------------------------------------------------------
+CREATE TABLE word_entry (
+  id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  word_id     BIGINT UNSIGNED NOT NULL                COMMENT 'lexeme / word.id',
+  entry_hash  CHAR(64)        NOT NULL                COMMENT 'sha256(排序后的 sense_id 列表)',
+  create_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_word_entry_hash (word_id, entry_hash),
+  KEY idx_word (word_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '词条（义项集合）';
+
+-- ---------------------------------------------------------------------------
+-- 3.2 义项（sense）：全局复用，按 word + 词性 + 释义键去重
+-- ---------------------------------------------------------------------------
+CREATE TABLE sense (
+  id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  word_id     BIGINT UNSIGNED NOT NULL                COMMENT 'lexeme / word.id',
+  pos         VARCHAR(32)     NOT NULL                COMMENT '展示词性，如 n. / v. / det.',
+  pos_key     VARCHAR(32)     NOT NULL                COMMENT '归一化词性键',
+  meaning     TEXT            NOT NULL                COMMENT '展示释义（保留同义组顺序）',
+  meaning_key CHAR(64)        NOT NULL                COMMENT '词性 + 排序同义词集合的 sha256',
+  create_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_sense_key (word_id, pos_key, meaning_key),
+  KEY idx_word (word_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '义项';
+
+-- ---------------------------------------------------------------------------
+-- 3.3 词条-义项（有序展示）
+-- ---------------------------------------------------------------------------
+CREATE TABLE word_entry_sense (
+  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  entry_id        BIGINT UNSIGNED NOT NULL,
+  sense_id        BIGINT UNSIGNED NOT NULL,
+  sort            INT             NOT NULL DEFAULT 0,
+  display_meaning TEXT            DEFAULT NULL        COMMENT '本书展示用释义，保留同义组顺序',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_entry_sense (entry_id, sense_id),
+  KEY idx_sense (sense_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '词条义项';
 
 -- ---------------------------------------------------------------------------
 -- 4. 词书-单词 关联（书内顺序）
@@ -79,13 +126,16 @@ CREATE TABLE word (
 CREATE TABLE wordbook_word (
   id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   wordbook_id BIGINT UNSIGNED NOT NULL,
-  word_id     BIGINT UNSIGNED NOT NULL,
+  word_id     BIGINT UNSIGNED NOT NULL                COMMENT 'lexeme / word.id',
+  entry_id    BIGINT UNSIGNED DEFAULT NULL            COMMENT '本书使用的 word_entry.id',
   seq         INT             NOT NULL                COMMENT '书内顺序，从 1 开始',
   unit        VARCHAR(32)     DEFAULT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uk_book_seq (wordbook_id, seq),
   UNIQUE KEY uk_book_word (wordbook_id, word_id),
-  KEY idx_word (word_id)
+  UNIQUE KEY uk_book_entry (wordbook_id, entry_id),
+  KEY idx_word (word_id),
+  KEY idx_entry (entry_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '词书单词关联';
 
 -- ---------------------------------------------------------------------------

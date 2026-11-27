@@ -3,12 +3,19 @@ package com.shorthand.service.impl;
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.shorthand.common.BizException;
+import com.shorthand.common.WordTextUtils;
+import com.shorthand.domain.Sense;
 import com.shorthand.domain.Word;
+import com.shorthand.domain.WordEntry;
+import com.shorthand.domain.WordEntrySense;
 import com.shorthand.domain.Wordbook;
 import com.shorthand.domain.WordbookWord;
 import com.shorthand.domain.bo.WordbookSaveBo;
 import com.shorthand.domain.vo.WordImportVo;
 import com.shorthand.domain.vo.WordbookVo;
+import com.shorthand.mapper.SenseMapper;
+import com.shorthand.mapper.WordEntryMapper;
+import com.shorthand.mapper.WordEntrySenseMapper;
 import com.shorthand.mapper.WordMapper;
 import com.shorthand.mapper.WordbookMapper;
 import com.shorthand.mapper.WordbookWordMapper;
@@ -29,6 +36,9 @@ public class AdminWordbookServiceImpl implements IAdminWordbookService {
     private final WordbookMapper wordbookMapper;
     private final WordbookWordMapper wordbookWordMapper;
     private final WordMapper wordMapper;
+    private final WordEntryMapper wordEntryMapper;
+    private final SenseMapper senseMapper;
+    private final WordEntrySenseMapper wordEntrySenseMapper;
 
     @Override
     public List<WordbookVo> list() {
@@ -97,6 +107,22 @@ public class AdminWordbookServiceImpl implements IAdminWordbookService {
         Map<Long, Word> words = wordIds.isEmpty() ? Map.of() : wordMapper.selectBatchIds(wordIds).stream()
                 .collect(Collectors.toMap(Word::getId, w -> w, (a, b) -> a));
 
+        List<Long> entryIds = relations.stream().map(WordbookWord::getEntryId)
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        Map<Long, WordEntry> entries = entryIds.isEmpty() ? Map.of()
+                : wordEntryMapper.selectBatchIds(entryIds).stream()
+                .collect(Collectors.toMap(WordEntry::getId, e -> e, (a, b) -> a));
+        List<WordEntrySense> links = entryIds.isEmpty() ? List.of()
+                : wordEntrySenseMapper.selectList(Wrappers.<WordEntrySense>lambdaQuery()
+                .in(WordEntrySense::getEntryId, entryIds)
+                .orderByAsc(WordEntrySense::getSort));
+        Map<Long, List<WordEntrySense>> linksByEntry = links.stream()
+                .collect(Collectors.groupingBy(WordEntrySense::getEntryId));
+        List<Long> senseIds = links.stream().map(WordEntrySense::getSenseId).distinct().toList();
+        Map<Long, Sense> senses = senseIds.isEmpty() ? Map.of()
+                : senseMapper.selectBatchIds(senseIds).stream()
+                .collect(Collectors.toMap(Sense::getId, s -> s, (a, b) -> a));
+
         List<WordImportVo> rows = new ArrayList<>();
         for (WordbookWord relation : relations) {
             Word word = words.get(relation.getWordId());
@@ -106,8 +132,19 @@ public class AdminWordbookServiceImpl implements IAdminWordbookService {
             row.setWord(word.getWord());
             row.setPhoneticUk(word.getPhoneticUk());
             row.setPhoneticUs(word.getPhoneticUs());
-            row.setPos(word.getPos());
-            row.setMeaning(word.getMeaning());
+
+            List<String> meaningLines = new ArrayList<>();
+            WordEntry entry = relation.getEntryId() == null ? null : entries.get(relation.getEntryId());
+            if (entry != null) {
+                for (WordEntrySense link : linksByEntry.getOrDefault(entry.getId(), List.of())) {
+                    Sense sense = senses.get(link.getSenseId());
+                    if (sense == null) continue;
+                    String display = WordTextUtils.hasText(link.getDisplayMeaning())
+                            ? link.getDisplayMeaning() : sense.getMeaning();
+                    meaningLines.add(sense.getPos() + " " + display);
+                }
+            }
+            row.setMeaning(meaningLines.isEmpty() ? word.getMeaning() : String.join("\n", meaningLines));
             row.setExampleEn(word.getExampleEn());
             row.setExampleCn(word.getExampleCn());
             rows.add(row);

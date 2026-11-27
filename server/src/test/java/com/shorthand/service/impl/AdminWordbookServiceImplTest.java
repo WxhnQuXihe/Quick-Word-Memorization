@@ -5,6 +5,9 @@ import com.shorthand.domain.Word;
 import com.shorthand.domain.Wordbook;
 import com.shorthand.domain.WordbookWord;
 import com.shorthand.domain.vo.WordImportVo;
+import com.shorthand.mapper.SenseMapper;
+import com.shorthand.mapper.WordEntryMapper;
+import com.shorthand.mapper.WordEntrySenseMapper;
 import com.shorthand.mapper.WordMapper;
 import com.shorthand.mapper.WordbookMapper;
 import com.shorthand.mapper.WordbookWordMapper;
@@ -30,6 +33,12 @@ class AdminWordbookServiceImplTest {
     private WordbookWordMapper wordbookWordMapper;
     @Mock
     private WordMapper wordMapper;
+    @Mock
+    private WordEntryMapper wordEntryMapper;
+    @Mock
+    private SenseMapper senseMapper;
+    @Mock
+    private WordEntrySenseMapper wordEntrySenseMapper;
 
     @InjectMocks
     private AdminWordbookServiceImpl service;

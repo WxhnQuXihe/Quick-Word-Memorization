@@ -5,7 +5,7 @@
 不开放注册，不设每日目标，不排复习队列 —— 只做一件事：把一本词书按轮次刷完。
 
 > 项目名 `Shorthand`，App 显示名「神也背单词」。仓库为 monorepo，用户端、管理后台、服务端共用一套 REST API。
-> 当前版本：**v0.5.2**（Android 签名包；修复熟词本/收藏夹只显示前 20 条，补充分页浏览与学习取词加固）。
+> 当前版本：**v0.5.2**（Android 签名包；修复熟词本/收藏夹只显示前 20 条，补充分页浏览与学习取词加固）。2026-11-27 后端词书模型升级为五本词书、7 列导入，App 无需重新发版。
 > 本文按当前代码写成，不是方案文档的转述；两者冲突时以代码为准。
 
 ## 目录
@@ -35,7 +35,7 @@
 - **使用者**：作者本人与少数朋友。账号由管理后台创建，没有注册入口。
 - **形态**：主力是安卓 App（Capacitor 打包的 Vue 3 页面），另有一套只给管理员用的 Web 后台。
 - **取舍**：刻意不做「科学背单词」那套机制 —— 没有遗忘曲线、没有每日目标、没有复习队列。已接入**预生成单词朗读**（Kokoro），不做实时 TTS、跟读评分和例句朗读。产品契约只有一条：**一轮过完，就是过完了**。熟词不再出现，剩下的词随机分组反复刷。
-- **规模假设**：单实例、单管理员、单本词书最大约 5500 词。所有复杂选词都在 JVM 内存里算，不依赖缓存与队列。
+- **规模假设**：单实例、单管理员、单本词书最大约 6000 词。所有复杂选词都在 JVM 内存里算，不依赖缓存与队列。
 
 ## 2. 功能范围
 
@@ -71,12 +71,12 @@
 │     ├─ config/            MybatisPlusConfig / WebConfig / AuthInterceptor / TokenStore
 │     ├─ controller/        用户端接口 + admin/ 子包（管理端接口）
 │     ├─ domain/            实体 + bo/（入参）+ vo/（出参）
-│     ├─ mapper/            13 个 Mapper，全部 extends BaseMapper<T>
+│     ├─ mapper/            16 个 Mapper，全部 extends BaseMapper<T>
 │     ├─ service/ impl/     业务实现（StudyServiceImpl 承载核心学习模型）
 │     └─ listener/          WordImportListener（EasyExcel 读表）
 ├─ app/                     Vue 3 用户端（Capacitor 壳 + android/ ios/ 原生工程）
 ├─ admin/                   Vue 3 管理后台（base 为 /admin/）
-├─ db/schema.sql            首次建库脚本（13 张表，执行一次即弃）
+├─ db/schema.sql            首次建库脚本（16 张表，执行一次即弃）
 ├─ tools/                   词书转换、Kokoro 音频生成、音标校对、冒烟测试、版本发布脚本
 ├─ assets/                  App 图标与启动页
 ├─ .github/workflows/       deploy.yml / release.yml / android.yml
@@ -166,31 +166,35 @@
 
 ## 7. 数据模型
 
-`db/schema.sql` 共 13 张表，全部 `utf8mb4_unicode_ci`。
+`db/schema.sql` 共 16 张表，默认 `utf8mb4_unicode_ci`；`word.headword_key` 单独使用 `utf8mb4_bin`，保证 `march` / `March` 可并存。
 
 | 表 | 作用 | 关键字段 |
 |---|---|---|
 | `app_user` | 用户（后台创建） | username / password / nickname / status / deleted |
 | `admin_user` | 管理员（单账号） | username / password / last_login_time |
 | `wordbook` | 词书 | code / name / word_count / sort / status / deleted |
-| `word` | 全局词条 | word / normalized / phonetic_uk / phonetic_us / pos / meaning / deleted |
-| `wordbook_word` | 词书-词关联 | wordbook_id / word_id / seq / unit |
+| `word` | 读音身份（lexeme，兼容表） | word / normalized / headword_key / pronunciation_key / phonetic_uk / phonetic_us / pos / meaning / deleted |
+| `word_entry` | 词书中的完整义项集合 | word_id / entry_hash |
+| `sense` | 全局义项 | word_id / pos / pos_key / meaning / meaning_key |
+| `word_entry_sense` | 词条引用义项及显示顺序 | entry_id / sense_id / sort / display_meaning |
+| `wordbook_word` | 词书-词条关联 | wordbook_id / word_id / entry_id / seq / unit |
 | `user_wordbook` | 用户书架与轮次游标 | user_id / wordbook_id / current_round_no / last_study_time |
 | `study_group` | 学习组 | user_id / wordbook_id / round_no / group_no / word_count / status / finish_time |
 | `study_group_word` | 组内槽位 | group_id / word_id / position / status |
-| `user_word` | 用户 × 词的状态（收藏 / 熟词 / 出现次数） | is_favorite / is_known / seen_count / first_wordbook_id |
+| `user_word` | 用户 × 读音身份的状态（收藏 / 熟词 / 出现次数） | is_favorite / is_known / seen_count / first_wordbook_id |
 | `feedback` | 意见反馈 | user_id / content / contact / status / reply / reply_time |
 | `import_log` | Excel 导入记录 | wordbook_id / file_name / total_rows / success_rows / fail_rows / status / error_file |
 | `announcement` | 公告 | title / content / status / publish_time |
 | `word_audio` | 单词音频索引 | word_id / accent / voice / object_key / checksum / model_version / status |
 
-关系链路：`wordbook —< wordbook_word >— word`；用户通过 `user_wordbook` 选书，`study_group —< study_group_word` 记录每组出过哪些词；`user_word` 是「用户 × 词」的唯一状态表，收藏夹与熟词本都是它的视图，不单独建表。`word_audio` 按 `word_id + accent + voice` 索引音频文件，音频文件本身存服务器磁盘，不存 BLOB。
+关系链路：`word` 是读音身份（lexeme）；`word_entry` 表示一组完整义项，`word_entry_sense` 引用全局 `sense`；`wordbook —< wordbook_word >— word_entry` 决定每本书显示哪组义项，`wordbook_word.word_id` 同时保留 lexeme 以兼容旧用户数据。用户通过 `user_wordbook` 选书，`study_group —< study_group_word` 记录每组出过哪些词；`user_word` 是「用户 × 读音身份」的唯一状态表，收藏夹与熟词本都是它的视图，不单独建表。`word_audio` 按 `word_id + accent + voice` 索引音频文件，音频文件本身存服务器磁盘，不存 BLOB。
 
 **几个刻意的取舍：**
 
 - **不建收藏夹表 / 熟词本表**：`user_word.is_favorite` / `is_known` 两个标志位就够，移出只是改回 0。
 - **不建统计表**：进度与计数实时算，个人量级下正确性优先。
-- **多词性不拆表**：`word.meaning` 用换行分隔，一行一个词性（`v. 放弃；遗弃` / `n. 放任`），`word.pos` 只留首个词性做兼容。后端 `WordVo` 把它解析成 `senses: [{pos, meaning}]` 再返回，前端只渲染不解析。
+- **义项拆表、按读音复用**：`sense` 是全局义项，按 `word_id + pos_key + meaning_key` 去重；`word_entry_sense` 决定本书显示哪些义项和顺序。`word.meaning` 只保留兼容聚合（旧数据/旧接口回退），`WordVo` 优先按 entry 返回 `senses`，前端只渲染不解析。
+- **同形词保留大小写**：`word.headword_key` 使用二进制比较，`march` / `March`、`may` / `May` 是不同 lexeme，各自绑定音频；`coordinate` 两个同形小写行合并为一个 entry。
 - **逻辑删除**：`app_user` / `wordbook` / `word` 带 `deleted` 字段，走 MyBatis-Plus `@TableLogic`；其余表物理删除。
 - **组内空位是显式状态**：`study_group_word.status = 2` 表示「这个词标熟后无词可补」，前端据此渲染空卡片，而不是把整组压短。
 
@@ -211,7 +215,7 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 
 业务代码里不出现任何 SQL：不写 XML、不写 `@Select`、不拼子查询。所有查询用 `LambdaQueryWrapper`，复杂选词（取当前组 / 下一组 / 标熟换词）先把几组 ID 查出来，在 Java 里做集合差再随机取。分页用 `Page<T>` + `PaginationInnerInterceptor`。
 
-单本词书最大约 5500 词，这套做法的内存与耗时都可接受，换来的是「改规则不用改 SQL」。
+单本词书最大约 6000 词，这套做法的内存与耗时都可接受，换来的是「改规则不用改 SQL」。
 
 ### 8.3 鉴权
 
@@ -259,7 +263,7 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 | POST | `/auth/login` · `/auth/password` | 登录 / 改密 |
 | GET | `/dashboard` | 总览数据（KPI、词书、近 14 天活跃度、最近用户、最近导入、JVM 与运行时长） |
 | GET/POST/PUT/DELETE | `/wordbooks` · `/wordbooks/{id}` · `/{id}/status` · `/{id}/words` | 词书 CRUD + 上下架 + 清空词 |
-| GET | `/wordbooks/{id}/export` | 按书内顺序导出标准 8 列 Excel，可直接回流导入 |
+| GET | `/wordbooks/{id}/export` | 按书内顺序导出标准 7 列 Excel，可直接回流导入 |
 | GET/POST/PUT/DELETE | `/words` · `/words/{id}` | 词条 CRUD |
 | POST | `/words/{id}/audio` | 上传/替换单词 MP3，更新 `word_audio` |
 | POST · GET | `/import/wordbook` · `/import/logs` | Excel 导入 / 导入记录 |
@@ -358,10 +362,10 @@ tools/release.sh v0.5.2        # 检查发布说明、打 tag 并推送
 数据链路：**PDF/Excel 源文件 → `tools/` 脚本清洗 → 标准导入 Excel → 后台上传 → EasyExcel 读表入库**。
 
 - `db/schema.sql` 不预置任何词条，词书完全由导入产生。
-- 标准模板 8 列依次为：序号、单词、英式音标、美式音标、词性、释义、英文例句、例句翻译；「英式音标」写入 `word.phonetic_uk`，「美式音标」写入 `word.phonetic_us`，两列独立保存。
-- 导入模板的「释义」单元格一行一个词性；`WordImportListener` 逐行读取，Service 写 `word` + `wordbook_word`，同时刷新 `wordbook.word_count` 并记 `import_log`（总行数 / 成功 / 失败 / 错误文件）。
-- `word` 是全局共享词条（按 `normalized` 唯一），`wordbook_word` 只负责书内顺序；同一个单词出现在多本书时复用同一个 `word_id`。当前导入只新增词条和关联，**不会覆盖已存在词条的内容**。
-- 后台词书页的「导出」按 `wordbook_word.seq` 导出同一套 8 列模板，可用于备份、审校或作为新版本词书的导入底稿。
+- 标准模板 7 列依次为：序号、单词、英式音标、美式音标、释义、英文例句、例句翻译；「英式音标」写入 `word.phonetic_uk`，「美式音标」写入 `word.phonetic_us`，两列独立保存。
+- 「释义」单元格一行一个义项，每行行首必须带词性（如 `v. 放弃；遗弃` / `n. 放任`）；缺词性会整批拒绝，不再有单独的词性列。`WordImportListener` 收集全部行，`AdminImportServiceImpl` 校验并合并后写入 `word` + `sense` + `word_entry` + `word_entry_sense` + `wordbook_word`，刷新 `wordbook.word_count` 并记 `import_log`。
+- `word` 是读音身份（按 `normalized + pronunciation_key + headword_key` 唯一），`sense` 是全局义项，`wordbook_word` 引用 `entry_id` 负责本书显示哪组义项；多本书共享义项，不复制整词或音频。
+- 后台词书页的「导出」按 `wordbook_word.seq` 导出同一套 7 列模板，可用于备份、审校或作为新版本词书的导入底稿。
 - 脚本：`build_wordbooks.py`（四级 / 六级 / 词组 → 标准 Excel）、`build_gaokao_wordbooks.py`（OCR 版高考词书）、`check_phonetics.py`（音标比对与校对）。
 - 词书内容不随仓库分发，需要用的人自备源文件跑脚本。
 

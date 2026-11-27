@@ -4,20 +4,26 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shorthand.common.BizException;
 import com.shorthand.common.PageResult;
+import com.shorthand.domain.Sense;
 import com.shorthand.domain.StudyGroup;
 import com.shorthand.domain.StudyGroupWord;
 import com.shorthand.domain.UserWord;
 import com.shorthand.domain.UserWordbook;
 import com.shorthand.domain.Word;
 import com.shorthand.domain.WordAudio;
+import com.shorthand.domain.WordEntry;
+import com.shorthand.domain.WordEntrySense;
 import com.shorthand.domain.WordbookWord;
 import com.shorthand.domain.vo.GroupVo;
 import com.shorthand.domain.vo.SenseVo;
 import com.shorthand.domain.vo.WordVo;
+import com.shorthand.mapper.SenseMapper;
 import com.shorthand.mapper.StudyGroupMapper;
 import com.shorthand.mapper.StudyGroupWordMapper;
 import com.shorthand.mapper.UserWordMapper;
 import com.shorthand.mapper.UserWordbookMapper;
+import com.shorthand.mapper.WordEntryMapper;
+import com.shorthand.mapper.WordEntrySenseMapper;
 import com.shorthand.mapper.WordMapper;
 import com.shorthand.mapper.WordbookWordMapper;
 import com.shorthand.mapper.WordAudioMapper;
@@ -54,6 +60,9 @@ public class StudyServiceImpl implements IStudyService {
     private final UserWordbookMapper userWordbookMapper;
     private final WordbookWordMapper wordbookWordMapper;
     private final WordMapper wordMapper;
+    private final WordEntryMapper wordEntryMapper;
+    private final SenseMapper senseMapper;
+    private final WordEntrySenseMapper wordEntrySenseMapper;
     private final WordAudioMapper wordAudioMapper;
     private final StudyGroupMapper studyGroupMapper;
     private final StudyGroupWordMapper studyGroupWordMapper;
@@ -143,6 +152,7 @@ public class StudyServiceImpl implements IStudyService {
                 studyGroupWordMapper.updateById(groupWord);
                 touchSeen(userId, List.of(replacementId), group.getWordbookId());
                 return toWordVo(wordMapper.selectById(replacementId),
+                        entryIdForBook(group.getWordbookId(), replacementId),
                         audioUrls(List.of(replacementId)).get(replacementId));
             } catch (DuplicateKeyException e) {
                 if (attempt == 2) {
@@ -403,11 +413,13 @@ public class StudyServiceImpl implements IStudyService {
                 .filter(Objects::nonNull).toList();
         Map<Long, Word> words = ids.isEmpty() ? Map.of() : wordMapper.selectBatchIds(ids).stream()
                 .collect(Collectors.toMap(Word::getId, Function.identity()));
+        Map<Long, Long> entries = entryIdsForBook(group.getWordbookId(), ids);
         Map<Long, String> audio = audioUrls(ids);
         List<WordVo> vos = new ArrayList<>();
         for (StudyGroupWord row : rows) {
             if (row.getWordId() != null && words.containsKey(row.getWordId())) {
-                vos.add(toWordVo(words.get(row.getWordId()), audio.get(row.getWordId())));
+                vos.add(toWordVo(words.get(row.getWordId()), entries.get(row.getWordId()),
+                        audio.get(row.getWordId())));
             }
         }
         GroupVo vo = new GroupVo();
@@ -426,8 +438,26 @@ public class StudyServiceImpl implements IStudyService {
         Map<Long, Word> words = wordMapper.selectBatchIds(ids).stream()
                 .collect(Collectors.toMap(Word::getId, Function.identity()));
         Map<Long, String> audio = audioUrls(ids);
-        return rows.stream().map(row -> toWordVo(words.get(row.getWordId()), audio.get(row.getWordId())))
+        return rows.stream().map(row -> toWordVo(words.get(row.getWordId()), null,
+                        audio.get(row.getWordId())))
                 .filter(Objects::nonNull).toList();
+    }
+
+    private Map<Long, Long> entryIdsForBook(Long wordbookId, List<Long> wordIds) {
+        if (wordIds.isEmpty()) return Map.of();
+        return wordbookWordMapper.selectList(Wrappers.<WordbookWord>lambdaQuery()
+                        .eq(WordbookWord::getWordbookId, wordbookId)
+                        .in(WordbookWord::getWordId, wordIds))
+                .stream().filter(r -> r.getEntryId() != null)
+                .collect(Collectors.toMap(WordbookWord::getWordId, WordbookWord::getEntryId, (a, b) -> a));
+    }
+
+    private Long entryIdForBook(Long wordbookId, Long wordId) {
+        WordbookWord relation = wordbookWordMapper.selectOne(Wrappers.<WordbookWord>lambdaQuery()
+                .eq(WordbookWord::getWordbookId, wordbookId)
+                .eq(WordbookWord::getWordId, wordId)
+                .last("LIMIT 1"));
+        return relation == null ? null : relation.getEntryId();
     }
 
     private Map<Long, String> audioUrls(List<Long> ids) {
@@ -442,16 +472,57 @@ public class StudyServiceImpl implements IStudyService {
     }
 
     private WordVo toWordVo(Word word) {
-        return toWordVo(word, null);
+        return toWordVo(word, null, null);
     }
 
-    private WordVo toWordVo(Word word, String audioUrl) {
+    private WordVo toWordVo(Word word, Long entryId, String audioUrl) {
         if (word == null) return null;
         WordVo vo = new WordVo();
         vo.setId(word.getId());
         vo.setWord(word.getWord());
         vo.setPhoneticUk(word.getPhoneticUk());
         vo.setPhoneticUs(word.getPhoneticUs());
+
+        List<SenseVo> senses = entryId == null ? sensesForLexeme(word.getId()) : sensesForEntry(entryId);
+        if (senses.isEmpty()) senses = legacySenses(word);
+        vo.setSenses(senses);
+        vo.setAudioUrl(audioUrl);
+        return vo;
+    }
+
+    private List<SenseVo> sensesForEntry(Long entryId) {
+        List<WordEntrySense> links = wordEntrySenseMapper.selectList(Wrappers.<WordEntrySense>lambdaQuery()
+                .eq(WordEntrySense::getEntryId, entryId)
+                .orderByAsc(WordEntrySense::getSort));
+        if (links.isEmpty()) return List.of();
+        List<Long> senseIds = links.stream().map(WordEntrySense::getSenseId).toList();
+        Map<Long, Sense> senses = senseMapper.selectBatchIds(senseIds).stream()
+                .collect(Collectors.toMap(Sense::getId, Function.identity()));
+        List<SenseVo> result = new ArrayList<>();
+        for (WordEntrySense link : links) {
+            Sense sense = senses.get(link.getSenseId());
+            if (sense != null) result.add(toSenseVo(sense, link.getDisplayMeaning()));
+        }
+        return result;
+    }
+
+    private List<SenseVo> sensesForLexeme(Long wordId) {
+        return senseMapper.selectList(Wrappers.<Sense>lambdaQuery()
+                        .eq(Sense::getWordId, wordId)
+                        .orderByAsc(Sense::getId))
+                .stream().map(s -> toSenseVo(s, null)).toList();
+    }
+
+    private SenseVo toSenseVo(Sense sense, String displayMeaning) {
+        SenseVo vo = new SenseVo();
+        vo.setPos(sense.getPos());
+        String meaning = displayMeaning;
+        if (meaning == null || meaning.trim().isEmpty()) meaning = sense.getMeaning();
+        vo.setMeaning(meaning);
+        return vo;
+    }
+
+    private List<SenseVo> legacySenses(Word word) {
         List<SenseVo> senses = new ArrayList<>();
         String meaning = word.getMeaning() == null ? "" : word.getMeaning();
         for (String line : meaning.split("\\R")) {
@@ -474,8 +545,6 @@ public class StudyServiceImpl implements IStudyService {
             sense.setMeaning("");
             senses.add(sense);
         }
-        vo.setSenses(senses);
-        vo.setAudioUrl(audioUrl);
-        return vo;
+        return senses;
     }
 }

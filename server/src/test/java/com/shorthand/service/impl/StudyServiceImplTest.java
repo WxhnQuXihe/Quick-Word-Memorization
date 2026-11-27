@@ -3,19 +3,25 @@ package com.shorthand.service.impl;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.shorthand.domain.Sense;
 import com.shorthand.domain.StudyGroup;
 import com.shorthand.domain.StudyGroupWord;
 import com.shorthand.domain.UserWord;
 import com.shorthand.domain.UserWordbook;
 import com.shorthand.domain.Word;
 import com.shorthand.domain.WordAudio;
+import com.shorthand.domain.WordEntry;
+import com.shorthand.domain.WordEntrySense;
 import com.shorthand.domain.WordbookWord;
 import com.shorthand.domain.vo.WordVo;
+import com.shorthand.mapper.SenseMapper;
 import com.shorthand.mapper.StudyGroupMapper;
 import com.shorthand.mapper.StudyGroupWordMapper;
 import com.shorthand.mapper.UserWordMapper;
 import com.shorthand.mapper.UserWordbookMapper;
 import com.shorthand.mapper.WordAudioMapper;
+import com.shorthand.mapper.WordEntryMapper;
+import com.shorthand.mapper.WordEntrySenseMapper;
 import com.shorthand.mapper.WordMapper;
 import com.shorthand.mapper.WordbookWordMapper;
 import com.shorthand.service.StudyLockManager;
@@ -57,6 +63,12 @@ class StudyServiceImplTest {
     @Mock
     private WordMapper wordMapper;
     @Mock
+    private WordEntryMapper wordEntryMapper;
+    @Mock
+    private SenseMapper senseMapper;
+    @Mock
+    private WordEntrySenseMapper wordEntrySenseMapper;
+    @Mock
     private WordAudioMapper wordAudioMapper;
     @Mock
     private StudyGroupMapper studyGroupMapper;
@@ -78,6 +90,7 @@ class StudyServiceImplTest {
                 .when(studyLockManager).withLock(anyLong(), anyLong(), any());
         lenient().when(transactionTemplate.execute(any())).thenAnswer(invocation ->
                 ((TransactionCallback<?>) invocation.getArgument(0)).doInTransaction(null));
+        lenient().when(senseMapper.selectList(any())).thenReturn(List.of());
     }
 
     @BeforeAll
@@ -89,6 +102,9 @@ class StudyServiceImplTest {
         TableInfoHelper.initTableInfo(assistant, UserWordbook.class);
         TableInfoHelper.initTableInfo(assistant, Word.class);
         TableInfoHelper.initTableInfo(assistant, WordAudio.class);
+        TableInfoHelper.initTableInfo(assistant, WordEntry.class);
+        TableInfoHelper.initTableInfo(assistant, Sense.class);
+        TableInfoHelper.initTableInfo(assistant, WordEntrySense.class);
         TableInfoHelper.initTableInfo(assistant, WordbookWord.class);
     }
 

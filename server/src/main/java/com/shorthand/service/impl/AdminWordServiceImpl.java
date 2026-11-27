@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shorthand.common.BizException;
 import com.shorthand.common.PageResult;
+import com.shorthand.common.WordTextUtils;
 import com.shorthand.domain.Word;
 import com.shorthand.domain.WordAudio;
 import com.shorthand.domain.bo.WordSaveBo;
@@ -59,13 +60,19 @@ public class AdminWordServiceImpl implements IAdminWordService {
 
     @Override
     public Long create(WordSaveBo bo) {
-        String normalized = normalize(bo.getWord());
+        String normalized = WordTextUtils.normalizeWord(bo.getWord());
+        String headword = WordTextUtils.headwordKey(bo.getWord());
+        String pronunciation = WordTextUtils.pronunciationKey(bo.getPhoneticUs(), bo.getPhoneticUk());
         Long count = wordMapper.selectCount(Wrappers.<Word>lambdaQuery()
-                .eq(Word::getNormalized, normalized));
+                .eq(Word::getNormalized, normalized)
+                .eq(Word::getHeadwordKey, headword)
+                .eq(Word::getPronunciationKey, pronunciation));
         if (count != null && count > 0) throw new BizException("单词已存在");
         Word word = new Word();
         apply(word, bo);
         word.setNormalized(normalized);
+        word.setHeadwordKey(headword);
+        word.setPronunciationKey(pronunciation);
         wordMapper.insert(word);
         return word.getId();
     }
@@ -74,13 +81,19 @@ public class AdminWordServiceImpl implements IAdminWordService {
     public void update(Long id, WordSaveBo bo) {
         Word word = wordMapper.selectById(id);
         if (word == null) throw new BizException("词条不存在");
-        String normalized = normalize(bo.getWord());
+        String normalized = WordTextUtils.normalizeWord(bo.getWord());
+        String headword = WordTextUtils.headwordKey(bo.getWord());
+        String pronunciation = WordTextUtils.pronunciationKey(bo.getPhoneticUs(), bo.getPhoneticUk());
         Long count = wordMapper.selectCount(Wrappers.<Word>lambdaQuery()
                 .eq(Word::getNormalized, normalized)
+                .eq(Word::getHeadwordKey, headword)
+                .eq(Word::getPronunciationKey, pronunciation)
                 .ne(Word::getId, id));
         if (count != null && count > 0) throw new BizException("单词已存在");
         apply(word, bo);
         word.setNormalized(normalized);
+        word.setHeadwordKey(headword);
+        word.setPronunciationKey(pronunciation);
         wordMapper.updateById(word);
     }
 
@@ -149,10 +162,6 @@ public class AdminWordServiceImpl implements IAdminWordService {
         word.setMeaning(bo.getMeaning());
         word.setExampleEn(bo.getExampleEn());
         word.setExampleCn(bo.getExampleCn());
-    }
-
-    private String normalize(String word) {
-        return word == null ? "" : word.trim().toLowerCase();
     }
 
     private AdminWordVo toVo(Word word, String audioUrl) {

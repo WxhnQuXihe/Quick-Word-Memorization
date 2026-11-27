@@ -15,6 +15,8 @@ public class Word {
     private Long id;
     private String word;
     private String normalized;
+    private String headwordKey;
+    private String pronunciationKey;
     private String phoneticUk;
     private String phoneticUs;
     private String pos;

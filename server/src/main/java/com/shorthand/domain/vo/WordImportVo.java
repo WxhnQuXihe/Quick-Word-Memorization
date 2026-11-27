@@ -16,8 +16,6 @@ public class WordImportVo {
     private String phoneticUk;
     @ExcelProperty("美式音标")
     private String phoneticUs;
-    @ExcelProperty("词性")
-    private String pos;
     @ExcelProperty("释义")
     private String meaning;
     @ExcelProperty("英文例句")
