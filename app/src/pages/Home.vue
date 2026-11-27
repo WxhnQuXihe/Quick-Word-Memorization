@@ -131,7 +131,7 @@ onMounted(async () => { await load(); checkUpdate() })
         <div class="drawer-head"><h3 class="serif">选择词书</h3><button @click="showBooks = false">关闭</button></div>
         <p class="drawer-hint">换书不会清空学习记录。</p>
         <button v-for="b in books" :key="b.id" class="book-row" @click="pick(b)">
-          <div><b>{{ b.name }}</b><span>{{ b.wordCount.toLocaleString() }} 词 · 难度 {{ b.difficulty }}/5</span></div>
+          <div><b>{{ b.name }}</b><span>{{ b.wordCount.toLocaleString() }} 词 · 难度 {{ b.difficulty }}/10</span></div>
           <span class="arrow">›</span>
         </button>
       </div>

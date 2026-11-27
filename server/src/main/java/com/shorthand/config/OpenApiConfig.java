@@ -14,6 +14,6 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Shorthand API")
                         .description("神也背单词 / Shorthand 后端接口")
-                        .version("0.5.2"));
+                        .version("0.5.3"));
     }
 }

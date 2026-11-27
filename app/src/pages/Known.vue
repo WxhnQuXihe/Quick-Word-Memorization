@@ -11,6 +11,14 @@ const loading = ref(true)
 const pageNo = ref(1)
 const total = ref(0)
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / PAGE_SIZE)))
+const expanded = ref<Set<number>>(new Set())
+
+function toggle(id: number) {
+  const next = new Set(expanded.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  expanded.value = next
+}
 
 async function load(page = pageNo.value) {
   loading.value = true
@@ -54,8 +62,18 @@ onMounted(load)
     <div v-else-if="!rows.length" class="card empty-card"><div class="empty-mark">✓</div><h2 class="serif">还没有熟词</h2><p>背单词时点「标熟」，词就会来这里。</p><van-button type="primary" round @click="router.replace('/')">去背单词</van-button></div>
     <div v-else class="list" :class="{ dim: loading }">
       <article v-for="r in rows" :key="r.id" class="item">
-        <div class="item-main"><b class="serif">{{ r.word }}</b><span class="phonetic">{{ r.phoneticUk || r.phoneticUs }}</span><div class="senses"><div v-for="(s, i) in r.senses" :key="i" class="sense"><span class="pos">{{ s.pos }}</span><span>{{ s.meaning }}</span></div></div></div>
-        <button class="check" @click="remove(r.id)">✓</button>
+        <div class="item-main">
+          <div class="word-head" role="button" tabindex="0" :aria-expanded="expanded.has(r.id)" @click="toggle(r.id)" @keydown.enter.prevent="toggle(r.id)" @keydown.space.prevent="toggle(r.id)">
+            <b class="serif">{{ r.word }}</b>
+            <span class="phonetic">{{ r.phoneticUk || r.phoneticUs }}</span>
+            <span class="meaning-toggle">{{ expanded.has(r.id) ? '收起' : '释义' }}</span>
+          </div>
+          <div v-if="expanded.has(r.id)" class="senses">
+            <div v-for="(s, i) in r.senses" :key="i" class="sense"><span class="pos">{{ s.pos }}</span><span>{{ s.meaning }}</span></div>
+            <div v-if="!r.senses?.length" class="sense-empty">暂无释义</div>
+          </div>
+        </div>
+        <button class="check" @click.stop="remove(r.id)">✓</button>
       </article>
     </div>
     <nav v-if="pageCount > 1" class="pager" aria-label="熟词本翻页">
@@ -79,8 +97,11 @@ onMounted(load)
 .item { display: flex; align-items: flex-start; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; margin-bottom: 10px; }
 .item-main { flex: 1; min-width: 0; }
 .item b { font-size: 24px; font-weight: 500; }
-.phonetic { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.word-head { display: flex; align-items: baseline; gap: 8px; cursor: pointer; }
+.phonetic { font-size: 11px; color: var(--muted); }
+.meaning-toggle { margin-left: auto; flex: none; font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; line-height: 1.2; }
 .senses { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+.sense-empty { color: var(--muted); font-size: 12px; }
 .sense { display: grid; grid-template-columns: 30px 1fr; gap: 6px; font-size: 12px; line-height: 1.6; }
 .pos { color: var(--accent); font-family: "Iowan Old Style", Georgia, serif; font-style: italic; }
 .check { border: 0; background: transparent; color: var(--ok); font-size: 18px; padding: 2px; }

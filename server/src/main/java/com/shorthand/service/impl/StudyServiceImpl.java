@@ -39,6 +39,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -438,8 +439,9 @@ public class StudyServiceImpl implements IStudyService {
         Map<Long, Word> words = wordMapper.selectBatchIds(ids).stream()
                 .collect(Collectors.toMap(Word::getId, Function.identity()));
         Map<Long, String> audio = audioUrls(ids);
-        return rows.stream().map(row -> toWordVo(words.get(row.getWordId()), null,
-                        audio.get(row.getWordId())))
+        Map<Long, List<SenseVo>> senses = sensesForLexemes(ids);
+        return rows.stream().map(row -> toWordVoWithSenses(words.get(row.getWordId()),
+                        senses.get(row.getWordId()), audio.get(row.getWordId())))
                 .filter(Objects::nonNull).toList();
     }
 
@@ -477,14 +479,20 @@ public class StudyServiceImpl implements IStudyService {
 
     private WordVo toWordVo(Word word, Long entryId, String audioUrl) {
         if (word == null) return null;
+        List<SenseVo> senses = entryId == null ? sensesForLexeme(word.getId()) : sensesForEntry(entryId);
+        return toWordVoWithSenses(word, senses, audioUrl);
+    }
+
+    private WordVo toWordVoWithSenses(Word word, List<SenseVo> preloadedSenses, String audioUrl) {
+        if (word == null) return null;
         WordVo vo = new WordVo();
         vo.setId(word.getId());
         vo.setWord(word.getWord());
         vo.setPhoneticUk(word.getPhoneticUk());
         vo.setPhoneticUs(word.getPhoneticUs());
 
-        List<SenseVo> senses = entryId == null ? sensesForLexeme(word.getId()) : sensesForEntry(entryId);
-        if (senses.isEmpty()) senses = legacySenses(word);
+        List<SenseVo> senses = preloadedSenses;
+        if (senses == null || senses.isEmpty()) senses = legacySenses(word);
         vo.setSenses(senses);
         vo.setAudioUrl(audioUrl);
         return vo;
@@ -511,6 +519,17 @@ public class StudyServiceImpl implements IStudyService {
                         .eq(Sense::getWordId, wordId)
                         .orderByAsc(Sense::getId))
                 .stream().map(s -> toSenseVo(s, null)).toList();
+    }
+
+    private Map<Long, List<SenseVo>> sensesForLexemes(List<Long> wordIds) {
+        if (wordIds == null || wordIds.isEmpty()) return Map.of();
+        Map<Long, List<SenseVo>> result = new HashMap<>();
+        senseMapper.selectList(Wrappers.<Sense>lambdaQuery()
+                        .in(Sense::getWordId, wordIds)
+                        .orderByAsc(Sense::getId))
+                .forEach(s -> result.computeIfAbsent(s.getWordId(), k -> new ArrayList<>())
+                        .add(toSenseVo(s, null)));
+        return result;
     }
 
     private SenseVo toSenseVo(Sense sense, String displayMeaning) {

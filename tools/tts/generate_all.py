@@ -40,9 +40,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--input", default=str(ROOT / "_artifacts" / "tts" / "words.tsv"))
     args = ap.parse_args()
     words = []
-    for line in (ROOT / "_artifacts" / "tts" / "words.tsv").read_text(encoding="utf-8").splitlines():
+    for line in Path(args.input).read_text(encoding="utf-8").splitlines():
         if "\t" not in line: continue
         wid, word = line.split("\t", 1)
         words.append((int(wid), word))

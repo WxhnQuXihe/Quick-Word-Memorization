@@ -121,7 +121,7 @@ onMounted(load)
         <el-form-item label="名称"><el-input v-model="form.name" placeholder="四级大纲" /></el-form-item>
         <el-form-item label="简介"><el-input v-model="form.description" type="textarea" :rows="2" /></el-form-item>
         <div class="two">
-          <el-form-item label="难度 1~5"><el-input-number v-model="form.difficulty" :min="1" :max="5" /></el-form-item>
+          <el-form-item label="难度 1~10"><el-input-number v-model="form.difficulty" :min="1" :max="10" /></el-form-item>
           <el-form-item label="排序"><el-input-number v-model="form.sort" :min="0" :max="9999" /></el-form-item>
         </div>
       </el-form>
