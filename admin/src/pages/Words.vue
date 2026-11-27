@@ -63,9 +63,9 @@ async function remove(row: any) {
 async function uploadAudio(row: any, options: any) {
   const file = options.file as File
   if (!file) return
-  if (!file.name.toLowerCase().endsWith('.mp3')) {
-    ElMessage.warning('只支持 MP3 文件')
-    options.onError?.(new Error('not mp3'))
+  if (!/\.(mp3|wav)$/i.test(file.name)) {
+    ElMessage.warning('只支持 MP3 或 WAV 文件')
+    options.onError?.(new Error('not mp3 or wav'))
     return
   }
   try {
@@ -109,7 +109,7 @@ onMounted(load)
             <td class="audio-cell">
               <audio v-if="w.audioUrl" :src="w.audioUrl" controls preload="none" class="audio"></audio>
               <span v-else class="mono">无</span>
-              <el-upload :show-file-list="false" :http-request="uploadFor(w)" accept=".mp3,audio/mpeg">
+              <el-upload :show-file-list="false" :http-request="uploadFor(w)" accept=".mp3,.wav,audio/mpeg,audio/wav">
                 <el-button link>{{ w.audioUrl ? '替换' : '上传' }}</el-button>
               </el-upload>
             </td>

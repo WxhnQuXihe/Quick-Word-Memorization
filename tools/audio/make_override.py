@@ -2,6 +2,7 @@
 
 Examples:
   python tools/audio/make_override.py --word abandon --file ~/Downloads/abandon.mp3
+  python tools/audio/make_override.py --word abandon --file ~/Downloads/abandon.wav
   python tools/audio/make_override.py --word-id 1 --file ~/Downloads/abandon.mp3
 """
 from pathlib import Path
@@ -47,12 +48,17 @@ def main():
     args = ap.parse_args()
     src = Path(args.file).expanduser()
     if not src.exists(): raise SystemExit(f"文件不存在: {src}")
-    if not src.name.lower().endswith(".mp3"): raise SystemExit("只支持 MP3 文件")
-    if src.stat().st_size > 5 * 1024 * 1024: raise SystemExit("MP3 不能超过 5MB")
+    suffix = src.suffix.lower()
+    if suffix not in (".mp3", ".wav"): raise SystemExit("只支持 MP3 或 WAV 文件")
+    if src.stat().st_size > 5 * 1024 * 1024: raise SystemExit("音频不能超过 5MB")
     wid, word = find_word(args.word, args.word_id)
     OVERRIDES.mkdir(exist_ok=True)
-    name = f"{wid}-{slug(word)}.mp3"
+    name = f"{wid}-{slug(word)}{suffix}"
     dst = OVERRIDES / name
+    for old in load_rows():
+        if int(old["word_id"]) == wid and old["file"] != name:
+            old_path = OVERRIDES / old["file"]
+            if old_path.exists(): old_path.unlink()
     shutil.copyfile(src, dst)
     checksum = hashlib.sha256(dst.read_bytes()).hexdigest()
     rows = [r for r in load_rows() if int(r["word_id"]) != wid]

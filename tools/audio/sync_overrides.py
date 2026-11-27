@@ -36,9 +36,10 @@ def main():
         if not path.exists():
             print("missing", path); continue
         with path.open("rb") as f:
+            mime = "audio/wav" if path.suffix.lower() == ".wav" else "audio/mpeg"
             res = requests.post(f"{BASE}/api/admin/words/{r['word_id']}/audio",
                                 headers=headers,
-                                files={"file": (path.name, f, "audio/mpeg")},
+                                files={"file": (path.name, f, mime)},
                                 timeout=120)
         res.raise_for_status()
         body = res.json()

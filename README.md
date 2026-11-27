@@ -265,7 +265,7 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 | GET/POST/PUT/DELETE | `/wordbooks` · `/wordbooks/{id}` · `/{id}/status` · `/{id}/words` | 词书 CRUD + 上下架 + 清空词 |
 | GET | `/wordbooks/{id}/export` | 按书内顺序导出标准 7 列 Excel，可直接回流导入 |
 | GET/POST/PUT/DELETE | `/words` · `/words/{id}` | 词条 CRUD |
-| POST | `/words/{id}/audio` | 上传/替换单词 MP3，更新 `word_audio` |
+| POST | `/words/{id}/audio` | 上传/替换单词音频（MP3 或 WAV），更新 `word_audio` |
 | POST · GET | `/import/wordbook` · `/import/logs` | Excel 导入 / 导入记录 |
 | GET/POST/DELETE | `/users` · `/users/{id}/reset-password` · `/users/{id}` | 用户建号 / 重置密码 / 删除 |
 | GET · POST | `/feedback` · `/feedback/{id}/reply` | 反馈列表 / 回复 |
@@ -290,7 +290,7 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 - 底部保留**全局按钮**「隐藏单词 / 隐藏释义」，一键批量切换；之后仍可单卡点开某一张，单卡状态与全局按钮互不覆盖。
 - 熟词、收藏按钮 `stopPropagation`，避免误触隐藏。
 - 「下一组」两段式确认；退出时弹「要耍起了吗？」。
-- 每个单词右侧有朗读按钮；加载一组后异步预加载 10 条 MP3，音频缺失时隐藏按钮。
+- 每个单词右侧有朗读按钮；加载一组后异步预加载 10 条音频（生产库为 MP3，人工替换可用 WAV），音频缺失时隐藏按钮。
 
 状态管理只用一个 `stores/auth.ts`（token 存 `localStorage.app_token`），其余都是页面内状态。主题通过 `styles/tokens.css` 的 Design Token 统一（纸感编辑：暖白 `#f5f1e8` / 墨黑 `#1a1713` / 朱砂 `#b4432f`）。
 
@@ -371,10 +371,12 @@ tools/release.sh v0.5.3        # 检查发布说明、打 tag 并推送
 
 ### 人工修正音频
 
-自动生成的音频不进 Git；只把人工修正的 MP3 放进 `audio-overrides/`：
+自动生成的音频不进 Git；只把人工修正的音频（MP3 或 WAV）放进 `audio-overrides/`：
 
 ```bash
 python tools/audio/make_override.py --word abandon --file ~/Downloads/abandon.mp3
+# 也支持 WAV（后台/覆盖同步会原样保存，App 直接播放）
+python tools/audio/make_override.py --word abandon --file ~/Downloads/abandon.wav
 git add audio-overrides
 git commit -m "audio: 修正 abandon"
 git push

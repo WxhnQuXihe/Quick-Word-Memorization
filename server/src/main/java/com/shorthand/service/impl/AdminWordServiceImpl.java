@@ -108,13 +108,16 @@ public class AdminWordServiceImpl implements IAdminWordService {
         if (word == null) throw new BizException("词条不存在");
         if (file == null || file.isEmpty()) throw new BizException("请选择音频文件");
         String name = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
-        if (!name.endsWith(".mp3")) throw new BizException("目前只支持 MP3 音频");
+        String extension;
+        if (name.endsWith(".mp3")) extension = ".mp3";
+        else if (name.endsWith(".wav")) extension = ".wav";
+        else throw new BizException("只支持 MP3 或 WAV 音频");
         if (file.getSize() > 5 * 1024 * 1024) throw new BizException("音频不能超过 5MB");
         try {
             Path root = Paths.get(audioDir).toAbsolutePath().normalize();
             Path dir = root.resolve("manual");
             Files.createDirectories(dir);
-            String objectKey = "manual/" + id + "-" + UUID.randomUUID().toString().replace("-", "") + ".mp3";
+            String objectKey = "manual/" + id + "-" + UUID.randomUUID().toString().replace("-", "") + extension;
             Path target = root.resolve(objectKey).normalize();
             if (!target.startsWith(root)) throw new BizException("非法音频路径");
             file.transferTo(target.toFile());
