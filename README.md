@@ -253,7 +253,7 @@ config      → MyBatis-Plus 分页与逻辑删除、CORS、上传目录、token
 | GET | `/api/announcements` | 公告 |
 | POST · GET | `/api/feedback` · `/api/feedback/mine` | 提交反馈 / 我的反馈与回复 |
 | GET | `/api/app/version` | 最新版本号、下载地址、更新说明 |
-| — | 学习组响应 | `words[].audioUrl` 为预生成 MP3 地址；没有音频时为空 |
+| — | 学习组响应 | `words[].audioUrl` 为音频地址（生产库为 MP3，人工替换可为 WAV）；没有音频时为空 |
 | GET | `/actuator/health` | 健康检查（部署脚本据此判断存活） |
 
 管理端（`Authorization` 为管理员 token，全部在 `/api/admin` 下）：
