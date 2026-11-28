@@ -5,7 +5,7 @@
 不开放注册，不设每日目标，不排复习队列 —— 只做一件事：把一本词书按轮次刷完。
 
 > 项目名 `Shorthand`，App 显示名「神也背单词」。仓库为 monorepo，用户端、管理后台、服务端共用一套 REST API。
-> 当前版本：**v0.5.4**（Android 签名包；学习页新增「全部释义」，默认显示当前词书义项，点击后可查看该单词的全部义项；后端五本词书与 6,766 条单词音频已于 2026-11-27 就绪）。
+> 当前版本：**v0.5.5**（Android 签名包；学习页、熟词本和收藏夹的音标同时标注英音/美音；学习页支持「全部释义」底部弹层；后端五本词书与 6,766 条单词音频已于 2026-11-27 就绪）。
 > 本文按当前代码写成，不是方案文档的转述；两者冲突时以代码为准。
 
 ## 目录
@@ -350,7 +350,7 @@ CI/CD 是三条 GitHub Actions：
 发布说明是版本的一部分，先写 `.github/release-notes/vX.Y.Z.md`，再打 tag：
 
 ```bash
-tools/release.sh v0.5.4        # 检查发布说明、打 tag 并推送
+tools/release.sh v0.5.5        # 检查发布说明、打 tag 并推送
 ```
 
 `tools/release.sh` 会先确认对应的 release note 存在；tag 推送触发 `.github/workflows/release.yml`：`npm run build` → `cap sync android` → 用 secrets 里的 keystore 签名 → `assembleRelease` → 上传 GitHub Release；Release 正文读取 `.github/release-notes/<tag>.md`，不再使用通用模板。APK 可直接覆盖安装。

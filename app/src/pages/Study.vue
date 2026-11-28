@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { currentGroup, markKnown, nextGroup, toggleFavorite } from '../api/app'
 import { resolveAssetUrl } from '../api/http'
+import PhoneticText from '../components/PhoneticText.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -169,7 +170,7 @@ onMounted(load)
                 <van-icon name="volume-o" :size="18" />
               </button>
             </div>
-            <div class="phonetic">{{ card.phoneticUk || card.phoneticUs }}</div>
+            <PhoneticText class="phonetic" :uk="card.phoneticUk" :us="card.phoneticUs" />
           </template>
           <div v-else class="hidden-slot">点击显示单词</div>
         </div>
@@ -201,7 +202,9 @@ onMounted(load)
         <div class="all-senses-head">
           <div>
             <div class="all-senses-word serif">{{ allSensesCard.word }}</div>
-            <div class="all-senses-phonetic">{{ allSensesCard.phoneticUk || allSensesCard.phoneticUs }}</div>
+            <div class="all-senses-phonetic">
+              <PhoneticText :uk="allSensesCard.phoneticUk" :us="allSensesCard.phoneticUs" />
+            </div>
           </div>
           <button class="all-senses-close" aria-label="关闭全部释义" @click="showAllSenses = false">关闭</button>
         </div>

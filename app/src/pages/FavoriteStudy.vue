@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { listFavorites, removeFavorite } from '../api/app'
+import PhoneticText from '../components/PhoneticText.vue'
 
 const router = useRouter()
 const rows = ref<any[]>([])
@@ -88,7 +89,7 @@ onMounted(load)
           <button class="star" @click="unstar(card)">★ <span>移出</span></button>
         </div>
         <div class="word-zone" @click="card.wordHidden = !card.wordHidden">
-          <template v-if="!card.wordHidden"><div class="word serif">{{ card.word }}</div><div class="phonetic">{{ card.phoneticUk || card.phoneticUs }}</div></template>
+          <template v-if="!card.wordHidden"><div class="word serif">{{ card.word }}</div><PhoneticText class="phonetic" :uk="card.phoneticUk" :us="card.phoneticUs" /></template>
           <div v-else class="hidden-slot">点击显示单词</div>
         </div>
         <div class="rule"></div>

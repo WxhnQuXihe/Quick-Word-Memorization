@@ -53,6 +53,6 @@ app:
   audio-dir: ${APP_AUDIO_DIR:./data/audio}
   token-secret: ${APP_TOKEN_SECRET:shorthand-dev-secret-change-me}
   token-days: ${APP_TOKEN_DAYS:90}
-  latest-version: ${APP_LATEST_VERSION:0.5.4}
+  latest-version: ${APP_LATEST_VERSION:0.5.5}
   download-url: ${APP_DOWNLOAD_URL:https://github.com/WxhnQuXihe/Quick-Word-Memorization/releases/latest}
-  update-notes: ${APP_UPDATE_NOTES:学习页新增全部释义，默认显示当前词书义项，点击查看全部义项}
+  update-notes: ${APP_UPDATE_NOTES:音标现在同时显示英音和美音，学习页、熟词本和收藏夹都能看清读音来源}

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { listKnown, removeKnown } from '../api/app'
+import PhoneticText from '../components/PhoneticText.vue'
 
 const PAGE_SIZE = 20
 const router = useRouter()
@@ -65,7 +66,7 @@ onMounted(load)
         <div class="item-main">
           <div class="word-head" role="button" tabindex="0" :aria-expanded="expanded.has(r.id)" @click="toggle(r.id)" @keydown.enter.prevent="toggle(r.id)" @keydown.space.prevent="toggle(r.id)">
             <b class="serif">{{ r.word }}</b>
-            <span class="phonetic">{{ r.phoneticUk || r.phoneticUs }}</span>
+            <PhoneticText class="phonetic" small :uk="r.phoneticUk" :us="r.phoneticUs" />
             <span class="meaning-toggle">{{ expanded.has(r.id) ? '收起' : '释义' }}</span>
           </div>
           <div v-if="expanded.has(r.id)" class="senses">
