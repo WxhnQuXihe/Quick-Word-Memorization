@@ -152,9 +152,11 @@ public class StudyServiceImpl implements IStudyService {
             try {
                 studyGroupWordMapper.updateById(groupWord);
                 touchSeen(userId, List.of(replacementId), group.getWordbookId());
-                return toWordVo(wordMapper.selectById(replacementId),
+                WordVo vo = toWordVo(wordMapper.selectById(replacementId),
                         entryIdForBook(group.getWordbookId(), replacementId),
                         audioUrls(List.of(replacementId)).get(replacementId));
+                if (vo != null) vo.setAllSenses(sensesForLexeme(replacementId));
+                return vo;
             } catch (DuplicateKeyException e) {
                 if (attempt == 2) {
                     throw new BizException("换词冲突，请重试");
@@ -416,11 +418,17 @@ public class StudyServiceImpl implements IStudyService {
                 .collect(Collectors.toMap(Word::getId, Function.identity()));
         Map<Long, Long> entries = entryIdsForBook(group.getWordbookId(), ids);
         Map<Long, String> audio = audioUrls(ids);
+        Map<Long, List<SenseVo>> allSenses = sensesForLexemes(ids);
         List<WordVo> vos = new ArrayList<>();
         for (StudyGroupWord row : rows) {
             if (row.getWordId() != null && words.containsKey(row.getWordId())) {
-                vos.add(toWordVo(words.get(row.getWordId()), entries.get(row.getWordId()),
-                        audio.get(row.getWordId())));
+                WordVo vo = toWordVo(words.get(row.getWordId()), entries.get(row.getWordId()),
+                        audio.get(row.getWordId()));
+                if (vo != null) {
+                    List<SenseVo> all = allSenses.get(row.getWordId());
+                    if (all != null && !all.isEmpty()) vo.setAllSenses(all);
+                    vos.add(vo);
+                }
             }
         }
         GroupVo vo = new GroupVo();
@@ -494,6 +502,7 @@ public class StudyServiceImpl implements IStudyService {
         List<SenseVo> senses = preloadedSenses;
         if (senses == null || senses.isEmpty()) senses = legacySenses(word);
         vo.setSenses(senses);
+        vo.setAllSenses(senses);
         vo.setAudioUrl(audioUrl);
         return vo;
     }

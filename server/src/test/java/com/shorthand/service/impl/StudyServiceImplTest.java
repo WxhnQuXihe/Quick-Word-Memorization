@@ -225,12 +225,19 @@ class StudyServiceImplTest {
                 .thenReturn(1);
         when(wordMapper.selectById(2L)).thenReturn(replacement);
         when(wordAudioMapper.selectList(any())).thenReturn(List.of());
+        Sense allSense = new Sense();
+        allSense.setId(99L);
+        allSense.setWordId(2L);
+        allSense.setPos("num.");
+        allSense.setMeaning("二");
+        when(senseMapper.selectList(any())).thenReturn(List.of(allSense));
 
         WordVo result = studyService.markKnown(userId, groupId, wordId);
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(2L);
         assertThat(result.getWord()).isEqualTo("two");
+        assertThat(result.getAllSenses()).extracting("meaning").containsExactly("二");
         verify(studyGroupWordMapper, times(2)).updateById(any(StudyGroupWord.class));
     }
 }

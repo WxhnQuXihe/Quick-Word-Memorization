@@ -15,6 +15,8 @@ const cards = ref<any[]>([])
 const loading = ref(true)
 const nextArmed = ref(false)
 const showExit = ref(false)
+const showAllSenses = ref(false)
+const allSensesCard = ref<any>(null)
 let nextTimer: number | undefined
 let currentAudio: HTMLAudioElement | null = null
 const preloaded = new Map<string, HTMLAudioElement>()
@@ -22,6 +24,20 @@ const preloaded = new Map<string, HTMLAudioElement>()
 const allWordsHidden = computed(() => cards.value.length > 0 && cards.value.every((c) => c.wordHidden))
 const allMeaningsHidden = computed(() => cards.value.length > 0 && cards.value.every((c) => c.meaningHidden))
 const percent = computed(() => group.value ? Math.min(100, Math.round((group.value.groupNo / 443) * 100)) : 0)
+const allSensesList = computed(() => {
+  const card = allSensesCard.value
+  if (!card) return []
+  return (card.allSenses?.length ? card.allSenses : card.senses) || []
+})
+
+function senseCount(card: any) {
+  return card.allSenses?.length || card.senses?.length || 0
+}
+
+function openAllSenses(card: any) {
+  allSensesCard.value = card
+  showAllSenses.value = true
+}
 
 function preload(words: any[]) {
   for (const word of words) {
@@ -164,6 +180,9 @@ onMounted(load)
               <span class="pos">{{ s.pos }}</span><span class="def">{{ s.meaning }}</span>
             </div>
           </div>
+          <button v-if="!card.meaningHidden" class="all-senses" @click.stop="openAllSenses(card)">
+            全部释义 <span>{{ senseCount(card) }}</span>
+          </button>
           <div v-else class="hidden-slot">点击显示释义 · {{ card.senses.length }} 个词性</div>
         </div>
       </article>
@@ -176,6 +195,25 @@ onMounted(load)
       </div>
       <button class="next" :class="{ armed: nextArmed }" @click="handleNext">{{ nextArmed ? '再点一次进入下一组' : '下一组' }}</button>
     </footer>
+
+    <van-popup v-model:show="showAllSenses" position="bottom" round class="all-senses-popup" :style="{ maxHeight: '78vh' }">
+      <div v-if="allSensesCard" class="all-senses-panel">
+        <div class="all-senses-head">
+          <div>
+            <div class="all-senses-word serif">{{ allSensesCard.word }}</div>
+            <div class="all-senses-phonetic">{{ allSensesCard.phoneticUk || allSensesCard.phoneticUs }}</div>
+          </div>
+          <button class="all-senses-close" aria-label="关闭全部释义" @click="showAllSenses = false">关闭</button>
+        </div>
+        <div class="all-senses-kicker">全部释义 · {{ allSensesList.length }}</div>
+        <div class="all-senses-list">
+          <div v-for="(s, si) in allSensesList" :key="si" class="all-senses-row">
+            <span class="pos">{{ s.pos }}</span><span class="def">{{ s.meaning }}</span>
+          </div>
+          <div v-if="!allSensesList.length" class="all-senses-empty">暂无释义</div>
+        </div>
+      </div>
+    </van-popup>
 
     <div v-if="showExit" class="overlay">
       <div class="modal">
@@ -215,6 +253,18 @@ onMounted(load)
 .def { font-size: 14px; line-height: 1.7; }
 .hidden-slot { display: flex; align-items: center; justify-content: center; min-height: 44px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); font-size: 12px; }
 .meaning-zone .hidden-slot { min-height: 38px; }
+.all-senses { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding: 6px 11px; border: 1px solid rgba(180, 67, 47, .18); border-radius: 999px; background: rgba(180, 67, 47, .04); color: var(--accent); font-size: 11px; line-height: 1; -webkit-tap-highlight-color: transparent; }
+.all-senses span { display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: rgba(180, 67, 47, .1); font-size: 10px; font-variant-numeric: tabular-nums; }
+.all-senses-popup { background: var(--surface) !important; }
+.all-senses-panel { max-height: 78vh; overflow-y: auto; padding: 22px 20px calc(22px + env(safe-area-inset-bottom)); }
+.all-senses-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.all-senses-word { font-size: 32px; line-height: 1.08; letter-spacing: -.02em; font-weight: 500; }
+.all-senses-phonetic { margin-top: 5px; color: var(--muted); font-size: 12px; }
+.all-senses-close { flex: none; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); padding: 7px 12px; font-size: 11px; }
+.all-senses-kicker { margin: 20px 0 10px; color: var(--accent); font-size: 11px; letter-spacing: .12em; font-weight: 700; }
+.all-senses-list { display: flex; flex-direction: column; gap: 7px; }
+.all-senses-row { display: grid; grid-template-columns: 34px 1fr; column-gap: 8px; align-items: start; }
+.all-senses-empty { padding: 14px 0; color: var(--muted); font-size: 13px; }
 .done { text-align: center; padding: 40px 24px; }
 .done-mark { width: 52px; height: 52px; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; margin: 0 auto 14px; font-size: 22px; }
 .done h2 { font-size: 24px; margin: 0 0 6px; font-weight: 500; }
